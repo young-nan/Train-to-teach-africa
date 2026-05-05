@@ -1,0 +1,48 @@
+{
+  "name": "tta-platform",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Train To Teach Africa — the operating system for African education",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .js,.jsx --max-warnings 0",
+    "format": "prettier --write \"src/**/*.{js,jsx,css,md}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "supabase:gen-types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_REF > src/lib/supabase/types.ts",
+    "supabase:functions:deploy": "supabase functions deploy verify-payment"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "@tanstack/react-query": "^5.51.0",
+    "clsx": "^2.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0",
+    "zod": "^3.23.8",
+    "zustand": "^4.5.4"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.6",
+    "@testing-library/react": "^16.0.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^9.7.0",
+    "eslint-plugin-react": "^7.35.0",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "jsdom": "^24.1.1",
+    "postcss": "^8.4.40",
+    "prettier": "^3.3.3",
+    "tailwindcss": "^3.4.7",
+    "vite": "^5.3.5",
+    "vitest": "^2.0.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

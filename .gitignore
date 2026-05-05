@@ -1,0 +1,21 @@
+node_modules/
+dist/
+.vercel/
+
+# Local env
+.env
+.env.local
+.env.*.local
+
+# Editor/OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Test
+coverage/
+
+# Supabase
+.branches/
+.temp/

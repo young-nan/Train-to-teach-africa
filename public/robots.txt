@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /billing/
+Disallow: /auth/
+
+Sitemap: https://traintoteachafrica.org/sitemap.xml

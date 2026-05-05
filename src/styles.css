@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================================================
+   Global resets and quality-of-life
+   ============================================================================= */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Honour reduced-motion preference globally — animations are nice-to-have */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Default focus ring — overridden per-component when needed */
+  :focus-visible {
+    outline: 2px solid theme('colors.gold.400');
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* Selection — gold on dark */
+  ::selection {
+    background-color: theme('colors.gold.400');
+    color: #1a1305;
+  }
+}
+
+@layer utilities {
+  /* "Editorial italic gold" — used in display headings to mark emphasis */
+  .ital-gold {
+    font-style: italic;
+    color: theme('colors.gold.200');
+    font-weight: 400;
+  }
+}

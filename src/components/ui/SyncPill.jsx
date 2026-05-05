@@ -13,14 +13,13 @@
  * a hard rule: schools cannot debug HTTP. They need confidence, not data.
  */
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import * as queue from '@/lib/offline/queue';
 import { Chip } from './Chip';
 
-function subscribe(cb) { return queue.subscribe(cb); }
-function getQueueLength() { return queue._snapshotLength?.() ?? 0; }
-// Note: we read the live queue length on each subscriber notification by
-// calling pending(). Keeping the snapshot in IndexedDB is async-only.
+// We read the live queue length on each subscriber notification by calling
+// queue.pending() — the queue lives in IndexedDB, so it's async-only. The
+// SyncPill flips between three states based on the count and navigator.onLine.
 
 export function SyncPill() {
   const [count, setCount] = useState(0);

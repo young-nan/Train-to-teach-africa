@@ -14,12 +14,17 @@
 import * as queue from './queue';
 import * as simsService from '@/services/simsService';
 import * as lessonService from '@/services/lessonService';
+import * as gradebookService from '@/services/gradebookService';
 
 const HANDLERS = {
   attendance: ({ payload, idempotencyKey }) =>
     simsService.markAttendanceBatch({ ...payload, idempotencyKey }),
+  // Legacy single-assessment scores. Kept for any in-flight queue items.
   scores: ({ payload, idempotencyKey }) =>
     simsService.enterScores({ ...payload, idempotencyKey }),
+  // New: multi-component gradebook scores (one column at a time).
+  gradebook_scores: ({ payload, idempotencyKey }) =>
+    gradebookService.saveColumnScores({ ...payload, idempotencyKey }),
   assessment_attempt: ({ payload }) =>
     lessonService.submitAssessmentAttempt(payload),
 };
@@ -63,16 +68,18 @@ function backoffMs(attempts) {
 
 /**
  * Wire up sync triggers. Call once at app boot from main.jsx.
+ * Wrapped in a try/catch so a broken offline queue never blocks app boot.
  */
 export function startSyncEngine() {
-  // 1) When network returns
-  window.addEventListener('online', runSync);
-  // 2) When tab becomes visible (catches device wake from sleep)
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') runSync();
-  });
-  // 3) Periodically while online (handles in-progress queues)
-  setInterval(() => { if (navigator.onLine) runSync(); }, 15_000);
-  // 4) On boot, attempt to drain anything left from the previous session
-  runSync();
+  try {
+    const safeRun = () => runSync().catch((e) => console.warn('[sync] runSync failed', e));
+    window.addEventListener('online', safeRun);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') safeRun();
+    });
+    setInterval(() => { if (navigator.onLine) safeRun(); }, 15_000);
+    safeRun();
+  } catch (e) {
+    console.warn('[sync] could not start sync engine', e);
+  }
 }

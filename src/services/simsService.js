@@ -13,6 +13,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { logAuditEvent } from './auditService';
 
 // ---- Attendance -----------------------------------------------------------
 
@@ -38,6 +39,24 @@ export async function markAttendanceBatch({ classId, date, records, idempotencyK
     .upsert(rows, { onConflict: 'class_id,pupil_id,date' })
     .select();
   if (error) throw new Error(`Could not save attendance: ${error.message}`);
+
+  // Aggregate counts go into the audit detail. Lets admins answer "how
+  // many absences were marked across the school today" with one query.
+  const counts = rows.reduce((acc, r) => {
+    acc[r.status] = (acc[r.status] ?? 0) + 1;
+    return acc;
+  }, {});
+  logAuditEvent({
+    action: 'attendance.marked',
+    details: {
+      class_id: classId,
+      date,
+      total: rows.length,
+      counts,
+      idempotency_key: idempotencyKey,
+    },
+  });
+
   return data;
 }
 
@@ -70,18 +89,134 @@ export async function enterScores({ classId, assessmentId, scores, idempotencyKe
   return data;
 }
 
+// ---- Gradebook · assessments + terms --------------------------------------
+
+/**
+ * List assessments for the teacher's classes within the current term.
+ * Used by the gradebook list screen.
+ */
+export async function listAssessmentsForTeacher({ termId } = {}) {
+  let query = supabase
+    .from('assessments')
+    .select(`
+      id, title, subject, max_score, given_on,
+      class_id, term_id, component_id,
+      classes!inner(id, name, level, teacher_id),
+      term_components(id, code, label, weight)
+    `)
+    .order('given_on', { ascending: false });
+
+  if (termId) query = query.eq('term_id', termId);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.id) throw new Error('Not signed in');
+  query = query.eq('classes.teacher_id', user.id);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Could not load assessments: ${error.message}`);
+  return data ?? [];
+}
+
+export async function getAssessment(assessmentId) {
+  const { data, error } = await supabase
+    .from('assessments')
+    .select(`
+      *, classes(id, name, level, school_id),
+      term_components(id, code, label, weight),
+      terms(id, name, academic_year, term_number)
+    `)
+    .eq('id', assessmentId)
+    .single();
+  if (error) throw new Error(`Could not load assessment: ${error.message}`);
+  return data;
+}
+
+export async function createAssessment({ classId, termId, componentId, title, subject, maxScore, givenOn }) {
+  const { data, error } = await supabase
+    .from('assessments')
+    .insert({
+      class_id: classId,
+      term_id: termId,
+      component_id: componentId,
+      title,
+      subject,
+      max_score: maxScore,
+      given_on: givenOn ?? new Date().toISOString().slice(0, 10),
+    })
+    .select()
+    .single();
+  if (error) throw new Error(`Could not create assessment: ${error.message}`);
+  return data;
+}
+
+/**
+ * Get scores already entered for an assessment. Used to hydrate the
+ * gradebook entry screen so a teacher returning later sees their work.
+ */
+export async function getScoresForAssessment(assessmentId) {
+  const { data, error } = await supabase
+    .from('scores')
+    .select('pupil_id, score, max_score')
+    .eq('assessment_id', assessmentId);
+  if (error) throw new Error(`Could not load scores: ${error.message}`);
+  return data ?? [];
+}
+
+// ---- Terms + term components ----------------------------------------------
+
+export async function listTermsForSchool(schoolId) {
+  const { data, error } = await supabase
+    .from('terms')
+    .select(`
+      id, academic_year, term_number, name, starts_on, ends_on, is_current,
+      term_components(id, code, label, weight, sort_index)
+    `)
+    .eq('school_id', schoolId)
+    .order('starts_on', { ascending: false });
+  if (error) throw new Error(`Could not load terms: ${error.message}`);
+  return data ?? [];
+}
+
+export async function getCurrentTerm(schoolId) {
+  const { data, error } = await supabase
+    .from('terms')
+    .select(`
+      id, name, academic_year, term_number, starts_on, ends_on,
+      term_components(id, code, label, weight, sort_index)
+    `)
+    .eq('school_id', schoolId)
+    .eq('is_current', true)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load current term: ${error.message}`);
+  return data;
+}
+
 // ---- Reports --------------------------------------------------------------
 
 /**
  * Generate a term report for a pupil. Server-side aggregation — we never
  * compute report grades client-side. Returns a signed URL to a rendered PDF.
  */
-export async function generateTermReport({ pupilId, term, year }) {
+export async function generateTermReport({ pupilId, termId }) {
   const { data, error } = await supabase.functions.invoke('generate-report', {
-    body: { pupil_id: pupilId, term, year },
+    body: { pupil_id: pupilId, term_id: termId },
   });
   if (error) throw new Error(`Could not generate report: ${error.message}`);
   return data; // { report_id, url, expires_at }
+}
+
+/**
+ * Fetch the structured report data for a pupil. Used to preview a report
+ * before triggering PDF generation, AND used by the edge function as the
+ * data source for rendering. One source of truth.
+ */
+export async function getTermReportData({ pupilId, termId }) {
+  const { data, error } = await supabase.rpc('term_report_for_pupil', {
+    p_pupil_id: pupilId,
+    p_term_id: termId,
+  });
+  if (error) throw new Error(`Could not load report data: ${error.message}`);
+  return data;
 }
 
 // ---- Analytics ------------------------------------------------------------

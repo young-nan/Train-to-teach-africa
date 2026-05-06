@@ -8,11 +8,14 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Logo } from '@/components/brand';
+import { useAuth } from '@/hooks/useAuth';
+import { ROLE_HOME } from '@/config/roles';
 import { cn } from '@/utils/cn';
 
 const LINKS = [
   { to: '/solutions/schools', label: 'For Schools' },
   { to: '/solutions/parents', label: 'For Parents' },
+  { to: '/tutors', label: 'For Tutors' },
   { to: '/pricing', label: 'Pricing' },
   { to: '/about', label: 'About' },
 ];
@@ -20,6 +23,8 @@ const LINKS = [
 export function PublicNav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { isAuthenticated, role } = useAuth();
+  const dashboardHref = role ? (ROLE_HOME[role] ?? '/') : '/';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -58,12 +63,20 @@ export function PublicNav() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-s-3">
-          <Link to="/sign-in" className="text-[13.5px] text-ink-2 hover:text-ink-0 px-s-3 py-s-2">
-            Sign in
-          </Link>
-          <Link to="/sign-up">
-            <Button intent="primary" size="sm">Start learning</Button>
-          </Link>
+          {isAuthenticated ? (
+            <Link to={dashboardHref}>
+              <Button intent="primary" size="sm">Open dashboard →</Button>
+            </Link>
+          ) : (
+            <>
+              <Link to="/sign-in" className="text-[13.5px] text-ink-2 hover:text-ink-0 px-s-3 py-s-2">
+                Sign in
+              </Link>
+              <Link to="/sign-up">
+                <Button intent="primary" size="sm">Start learning</Button>
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -85,12 +98,20 @@ export function PublicNav() {
               </Link>
             ))}
             <div className="pt-s-4 border-t border-line-1 flex flex-col gap-s-3">
-              <Link to="/sign-in" onClick={() => setOpen(false)}>
-                <Button intent="ghost" size="md" className="w-full justify-center">Sign in</Button>
-              </Link>
-              <Link to="/sign-up" onClick={() => setOpen(false)}>
-                <Button intent="primary" size="md" className="w-full justify-center">Start learning</Button>
-              </Link>
+              {isAuthenticated ? (
+                <Link to={dashboardHref} onClick={() => setOpen(false)}>
+                  <Button intent="primary" size="md" className="w-full justify-center">Open dashboard →</Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/sign-in" onClick={() => setOpen(false)}>
+                    <Button intent="ghost" size="md" className="w-full justify-center">Sign in</Button>
+                  </Link>
+                  <Link to="/sign-up" onClick={() => setOpen(false)}>
+                    <Button intent="primary" size="md" className="w-full justify-center">Start learning</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </nav>
         </div>

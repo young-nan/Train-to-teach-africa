@@ -19,6 +19,7 @@ const PricingPage = lazy(() => import('@/pages/public/PricingPage'));
 const AboutPage = lazy(() => import('@/pages/public/AboutPage'));
 const SolutionsSchoolsPage = lazy(() => import('@/pages/public/SolutionsSchoolsPage'));
 const SolutionsParentsPage = lazy(() => import('@/pages/public/SolutionsParentsPage'));
+const TutorsPage = lazy(() => import('@/pages/public/TutorsPage'));
 const NotFoundPage = lazy(() => import('@/pages/public/NotFoundPage'));
 
 // Auth
@@ -41,6 +42,7 @@ const router = createBrowserRouter([
   { path: '/about', element: <Suspense fallback={null}><AboutPage /></Suspense> },
   { path: '/solutions/schools', element: <Suspense fallback={null}><SolutionsSchoolsPage /></Suspense> },
   { path: '/solutions/parents', element: <Suspense fallback={null}><SolutionsParentsPage /></Suspense> },
+  { path: '/tutors', element: <Suspense fallback={null}><TutorsPage /></Suspense> },
 
   // ---- Auth routes ----
   { path: '/sign-in', element: <Suspense fallback={null}><SignInPage /></Suspense> },

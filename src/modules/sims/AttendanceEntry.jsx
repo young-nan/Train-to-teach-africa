@@ -22,7 +22,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAttendance } from '@/hooks/useAttendance';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
@@ -32,6 +32,10 @@ import * as simsService from '@/services/simsService';
 
 export function AttendanceEntry() {
   const { classId } = useParams();
+  const [searchParams] = useSearchParams();
+  // Date comes from the picker via ?date=YYYY-MM-DD. Defaults to today
+  // if missing — harmless fallback if a teacher bookmarks a class register.
+  const dateParam = searchParams.get('date');
   const navigate = useNavigate();
 
   // Load the class metadata + pupil roster in parallel. Both are cached
@@ -85,18 +89,19 @@ export function AttendanceEntry() {
     );
   }
 
-  return <RegisterView classId={classId} cls={cls} pupils={pupils} onBack={() => navigate('/app/teacher/attendance')} />;
+  return <RegisterView classId={classId} cls={cls} pupils={pupils} date={dateParam} onBack={() => navigate('/app/teacher/attendance')} />;
 }
 
-function RegisterView({ classId, cls, pupils, onBack }) {
+function RegisterView({ classId, cls, pupils, date, onBack }) {
   const {
     register, counts, setStatus, setNote, markAllPresent,
     save, saving, savedAt, error, today,
-  } = useAttendance({ classId, pupils });
+  } = useAttendance({ classId, pupils, date });
 
   const dateLabel = new Date(today).toLocaleDateString('en-NG', {
     weekday: 'long', day: 'numeric', month: 'long',
   });
+  const isBackdated = today < new Date().toISOString().slice(0, 10);
 
   return (
     <div className="max-w-[820px]">
@@ -115,7 +120,10 @@ function RegisterView({ classId, cls, pupils, onBack }) {
             <h2 className="font-display text-[22px] leading-tight text-ink-0 truncate">
               {cls?.name ?? 'Register'}
             </h2>
-            <div className="font-mono text-meta text-ink-3 truncate">{dateLabel}</div>
+            <div className="font-mono text-meta text-ink-3 truncate">
+              {dateLabel}
+              {isBackdated && <span className="ml-s-2 text-amber-400">· Backdated</span>}
+            </div>
           </div>
         </div>
 

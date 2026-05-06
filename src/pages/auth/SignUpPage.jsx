@@ -5,12 +5,13 @@
  * via a sales-led flow that lands here too but pre-selects 'school_admin'.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { useAuth } from '@/hooks/useAuth';
+import { ROLE_HOME } from '@/config/roles';
 
 const ROLE_OPTIONS = [
   { value: 'parent', label: 'Parent', body: 'Sign up to support your child\'s learning at home.' },
@@ -18,7 +19,9 @@ const ROLE_OPTIONS = [
 ];
 
 export default function SignUpPage() {
-  const { signUp } = useAuth();
+  // Alias the store's role to `userRole` — the form uses `role` for the
+  // chosen-on-signup value, which is different from the hydrated role.
+  const { signUp, role: userRole, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const initialPlan = params.get('plan');
@@ -28,7 +31,20 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('parent');
   const [submitting, setSubmitting] = useState(false);
+  const [signedUp, setSignedUp] = useState(false);
   const [error, setError] = useState(null);
+
+  // Wait for the profile to hydrate before navigating, otherwise we land
+  // on `/` before the auth store knows what role we are.
+  useEffect(() => {
+    if (!signedUp) return;
+    if (!isAuthenticated || !userRole) return;
+    if (initialPlan) {
+      navigate(`/billing/checkout?plan=${initialPlan}`, { replace: true });
+    } else {
+      navigate(ROLE_HOME[userRole] ?? '/', { replace: true });
+    }
+  }, [signedUp, isAuthenticated, userRole, initialPlan, navigate]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -36,12 +52,11 @@ export default function SignUpPage() {
     setSubmitting(true);
     try {
       await signUp({ email, password, fullName, role });
-      // Pre-selected plan: route into checkout. Otherwise into the app.
-      if (initialPlan) navigate(`/billing/checkout?plan=${initialPlan}`);
-      else navigate('/');
+      setSignedUp(true);
+      // Don't clear `submitting` — keep the button spinning while we
+      // wait for hydration in the effect above.
     } catch (err) {
       setError(err.message);
-    } finally {
       setSubmitting(false);
     }
   };

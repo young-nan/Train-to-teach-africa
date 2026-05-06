@@ -2,9 +2,14 @@
  * src/pages/auth/SignInPage.jsx
  *
  * Email + password sign-in. Students go to /student-sign-in (PIN only).
+ *
+ * Post-sign-in flow: we wait for the auth store's `role` to populate
+ * before navigating, so the destination is role-aware. Without this
+ * wait, navigate() fires before profile hydration completes and the
+ * user lands on `/` (the public homepage) instead of their dashboard.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/Button';
@@ -12,7 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ROLE_HOME } from '@/config/roles';
 
 export default function SignInPage() {
-  const { signIn } = useAuth();
+  const { signIn, role, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = params.get('next');
@@ -20,7 +25,19 @@ export default function SignInPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
   const [error, setError] = useState(null);
+
+  // After the auth call resolves, we set `signedIn`. We then watch the
+  // `role` value — once it lands (auth bootstrap finished hydrating the
+  // profile), we navigate. If the user came from a protected route
+  // (`?next=...`), prefer that; otherwise route by role.
+  useEffect(() => {
+    if (!signedIn) return;
+    if (!isAuthenticated || !role) return; // still hydrating
+    const dest = next ? decodeURIComponent(next) : (ROLE_HOME[role] ?? '/');
+    navigate(dest, { replace: true });
+  }, [signedIn, isAuthenticated, role, next, navigate]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -28,13 +45,10 @@ export default function SignInPage() {
     setSubmitting(true);
     try {
       await signIn({ email, password });
-      // After login, the auth bootstrap will hydrate the profile and the
-      // RoleGuard will route us. Just go to the intended destination or
-      // a safe default; the guards handle role-mismatch redirects.
-      navigate(next ? decodeURIComponent(next) : '/');
+      // Don't navigate yet — wait for role hydration in the effect above.
+      setSignedIn(true);
     } catch (err) {
       setError(err.message);
-    } finally {
       setSubmitting(false);
     }
   };

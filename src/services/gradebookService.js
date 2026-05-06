@@ -19,6 +19,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { logAuditEvent } from './auditService';
 
 // ---- Columns ---------------------------------------------------------------
 
@@ -55,6 +56,18 @@ export async function createColumns({ classId, subject, term, year, columns }) {
     .insert(rows)
     .select();
   if (error) throw new Error(`Could not create columns: ${error.message}`);
+
+  // Fire-and-forget: never blocks the caller, never throws on audit failure.
+  logAuditEvent({
+    action: 'gradebook.column_created',
+    details: {
+      class_id: classId,
+      subject, term, year,
+      column_count: rows.length,
+      columns: rows.map((r) => ({ name: r.name, max_score: r.max_score, weight: r.weight })),
+    },
+  });
+
   return data;
 }
 
@@ -100,6 +113,17 @@ export async function saveColumnScores({ columnId, classId, scores, idempotencyK
     .upsert(rows, { onConflict: 'gradebook_column_id,pupil_id' })
     .select();
   if (error) throw new Error(`Could not save scores: ${error.message}`);
+
+  logAuditEvent({
+    action: 'gradebook.scores_saved',
+    details: {
+      column_id: columnId,
+      class_id: classId,
+      score_count: rows.length,
+      idempotency_key: idempotencyKey,
+    },
+  });
+
   return data;
 }
 

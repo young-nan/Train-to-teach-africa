@@ -81,13 +81,27 @@ export function onAuthStateChange(callback) {
  * Hydrate the user's profile + role + school context. Called once after auth
  * state change, then cached in the auth store. The view here joins three
  * tables — see `current_user_profile` view in migration 0002.
+ *
+ * Wrapped in a 10s timeout because supabase-js doesn't expose a request
+ * timeout setting, and on mobile we've seen the request hang indefinitely
+ * when Cloudflare returns a 5xx that supabase-js doesn't surface as an
+ * error — leaving the auth bootstrap stuck.
  */
 export async function hydrateProfile(userId) {
-  const { data, error } = await supabase
-    .from('current_user_profile')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
+  const HYDRATE_TIMEOUT_MS = 10_000;
+
+  const result = await Promise.race([
+    supabase
+      .from('current_user_profile')
+      .select('*')
+      .eq('user_id', userId)
+      .single(),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Profile hydration timed out')), HYDRATE_TIMEOUT_MS),
+    ),
+  ]);
+
+  const { data, error } = result;
   if (error) throw mapAuthError(error);
   return data;
 }

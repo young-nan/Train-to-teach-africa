@@ -30,20 +30,32 @@ export function useAuthBootstrap() {
     let cancelled = false;
     setLoading();
 
+    // De-dupe profile hydration. Without this, the bootstrap and the
+    // onAuthStateChange listener BOTH fire with the same session on first
+    // load — causing two profile fetches per page load. We track the last
+    // user_id we hydrated for and skip if it matches.
+    let lastHydratedUserId = null;
+
+    const hydrateIfNeeded = async (session) => {
+      const uid = session?.user?.id;
+      if (!uid) return;
+      if (uid === lastHydratedUserId) return; // already done
+      lastHydratedUserId = uid;
+      try {
+        const profile = await authService.hydrateProfile(uid);
+        if (!cancelled) setProfile(profile);
+      } catch (e) {
+        console.error('[auth] profile hydration failed', e);
+        // Reset the marker so a retry (e.g. via auth state change) can try again.
+        lastHydratedUserId = null;
+      }
+    };
+
     // 1) Bootstrap with the existing session (if any)
     authService.getSession().then(async (session) => {
       if (cancelled) return;
       setSession(session);
-      if (session?.user?.id) {
-        try {
-          const profile = await authService.hydrateProfile(session.user.id);
-          if (!cancelled) setProfile(profile);
-        } catch (e) {
-          // Profile hydration failure is recoverable — user can retry login.
-          console.error('[auth] profile hydration failed', e);
-          reset();
-        }
-      }
+      await hydrateIfNeeded(session);
     });
 
     // 2) Subscribe to auth state changes (login from another tab, refresh, etc.)
@@ -51,13 +63,9 @@ export function useAuthBootstrap() {
       if (cancelled) return;
       setSession(session);
       if (session?.user?.id) {
-        try {
-          const profile = await authService.hydrateProfile(session.user.id);
-          if (!cancelled) setProfile(profile);
-        } catch (e) {
-          console.error('[auth] profile hydration failed', e);
-        }
+        await hydrateIfNeeded(session);
       } else {
+        lastHydratedUserId = null;
         reset();
       }
     });

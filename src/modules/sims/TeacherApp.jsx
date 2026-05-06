@@ -15,6 +15,8 @@ import { Chip } from '@/components/ui/Chip';
 import { useAuth } from '@/hooks/useAuth';
 import { AttendanceClassPicker } from './AttendanceClassPicker';
 import { AttendanceEntry } from './AttendanceEntry';
+import { ScoresGradebookPicker } from './ScoresGradebookPicker';
+import { ScoresGradebook } from './ScoresGradebook';
 
 const NAV = [
   { to: '/app/teacher', label: 'Today', end: true },
@@ -31,7 +33,8 @@ export default function TeacherApp() {
       <Route path="attendance" element={<AttendanceShell><AttendanceClassPicker /></AttendanceShell>} />
       <Route path="attendance/:classId" element={<AttendanceShell><AttendanceEntry /></AttendanceShell>} />
       <Route path="lessons" element={<Placeholder title="Lessons" />} />
-      <Route path="scores" element={<Placeholder title="Scores" />} />
+      <Route path="scores" element={<ScoresShell><ScoresGradebookPicker /></ScoresShell>} />
+      <Route path="scores/grid" element={<ScoresShell><ScoresGradebook /></ScoresShell>} />
       <Route path="reports" element={<Placeholder title="Reports" />} />
     </Routes>
   );
@@ -80,8 +83,8 @@ function TodayView() {
             to="/app/teacher/scores"
             number="03"
             title="Enter scores"
-            body="Friday's quiz · 28 pupils awaiting"
-            cta="Open scoresheet →"
+            body="Open the gradebook for any class and term"
+            cta="Open gradebook →"
             estimate="≈ 4 minutes"
           />
           <GiantAction
@@ -147,6 +150,14 @@ function Placeholder({ title }) {
 function AttendanceShell({ children }) {
   return (
     <AppShell title="Attendance" navItems={NAV}>
+      {children}
+    </AppShell>
+  );
+}
+
+function ScoresShell({ children }) {
+  return (
+    <AppShell title="Scores" navItems={NAV}>
       {children}
     </AppShell>
   );

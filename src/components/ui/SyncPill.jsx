@@ -28,8 +28,15 @@ export function SyncPill() {
   useEffect(() => {
     let mounted = true;
     const refresh = async () => {
-      const items = await queue.pending();
-      if (mounted) setCount(items.length);
+      try {
+        const items = await queue.pending();
+        if (mounted) setCount(items.length);
+      } catch (e) {
+        // Defensive: never let a queue read error wedge the SyncPill or
+        // by extension the AppShell. If the queue is broken, render
+        // "Synced" — better than a stuck loading state.
+        if (mounted) setCount(0);
+      }
     };
     refresh();
     const unsub = queue.subscribe(refresh);

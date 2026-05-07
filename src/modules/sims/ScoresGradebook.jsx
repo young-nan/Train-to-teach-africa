@@ -14,7 +14,7 @@
  * One column at a time on purpose — see useGradebook for reasoning.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
@@ -22,6 +22,7 @@ import { Chip } from '@/components/ui/Chip';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { useGradebookColumn } from '@/hooks/useGradebook';
+import { useDebouncedAutoSave } from '@/hooks/useDebouncedAutoSave';
 import { ScoresColumnSetup } from './ScoresColumnSetup';
 import * as gradebookService from '@/services/gradebookService';
 import * as simsService from '@/services/simsService';
@@ -126,13 +127,27 @@ function GradebookEntryView({ classId, cls, subject, term, year, grid, onBack })
   );
 
   const {
-    grid: rowGrid, counts, setScore, save, saving, savedAt, error,
+    grid: rowGrid, counts, setScore, save, error,
   } = useGradebookColumn({
     column: activeColumn,
     classId,
     pupils: grid.pupils,
     existingScores,
   });
+
+  // Auto-save: 1.5s after the last edit, or immediately when the teacher
+  // taps "Save now" (which calls flush). The save() returned by the hook
+  // batches all dirty rows in one offline-queue entry.
+  const { status: saveStatus, savedAt, markDirty, flush } = useDebouncedAutoSave({
+    save,
+    delay: 1_500,
+  });
+
+  // Wrap setScore so every keystroke marks dirty and resets the debounce.
+  const handleScoreChange = useCallback((pupilId, value) => {
+    setScore(pupilId, value);
+    markDirty();
+  }, [setScore, markDirty]);
 
   const termLabel = ({ term_1: 'Term 1', term_2: 'Term 2', term_3: 'Term 3' }[term] ?? term);
 
@@ -174,7 +189,12 @@ function GradebookEntryView({ classId, cls, subject, term, year, grid, onBack })
         <Chip variant="gold" dot>
           {counts.entered} of {counts.total} entered
         </Chip>
-        {counts.dirty > 0 && (
+        {counts.invalid > 0 && (
+          <Chip variant="red" dot>
+            {counts.invalid} invalid
+          </Chip>
+        )}
+        {counts.dirty > 0 && counts.invalid === 0 && (
           <Chip variant="amber" dot>
             {counts.dirty} {counts.dirty === 1 ? 'change' : 'changes'} unsaved
           </Chip>
@@ -187,49 +207,71 @@ function GradebookEntryView({ classId, cls, subject, term, year, grid, onBack })
       {/* Pupil grid */}
       <div className="bg-surface-2 border border-line-1 rounded-r-3 mb-s-5 overflow-hidden">
         {grid.pupils.map((pupil) => {
-          const entry = rowGrid[pupil.id] ?? { score: null };
+          const entry = rowGrid[pupil.id] ?? { score: null, invalid: false };
           return (
             <PupilScoreRow
               key={pupil.id}
               pupil={pupil}
               score={entry.score}
+              invalid={entry.invalid}
               maxScore={activeColumn?.max_score}
-              onChange={(v) => setScore(pupil.id, v)}
+              onChange={(v) => handleScoreChange(pupil.id, v)}
             />
           );
         })}
       </div>
 
-      {/* Sticky save bar */}
+      {/* Sticky save bar — shows auto-save status, with explicit "Save now" */}
       <div className="sticky bottom-0 -mx-s-6 lg:-mx-s-9 px-s-6 lg:px-s-9 py-s-4 bg-surface-1/95 backdrop-blur-md border-t border-line-1">
         <div className="flex items-center gap-s-4 flex-wrap">
           <Button
             intent="primary"
             size="lg"
-            onClick={save}
-            isLoading={saving}
+            onClick={flush}
+            isLoading={saveStatus === 'saving'}
             className="flex-1 sm:flex-initial justify-center min-w-[180px]"
-            disabled={counts.entered === 0}
+            disabled={counts.dirty === 0 || counts.invalid > 0}
           >
             Save {activeColumn?.name}
           </Button>
-          <div className="font-mono text-meta text-ink-3 flex-1 min-w-0 truncate">
-            {error ? (
-              <span className="text-red-400">{error}</span>
-            ) : savedAt ? (
-              <span className="text-green-400">
-                Saved at {savedAt.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            ) : counts.dirty > 0 ? (
-              <>{counts.dirty} unsaved</>
-            ) : counts.entered > 0 ? (
-              'No changes'
-            ) : (
-              'Enter scores above'
-            )}
-          </div>
+          <SaveStatusLine
+            status={saveStatus}
+            savedAt={savedAt}
+            error={error}
+            counts={counts}
+          />
         </div>
       </div>
+    </div>
+  );
+}
+
+function SaveStatusLine({ status, savedAt, error, counts }) {
+  // The status line tells the teacher what's happening with their data,
+  // in plain language. Never shows raw HTTP. Never shows "synced" — that
+  // word means something specific (the offline queue is drained), and the
+  // SyncPill in the header already covers it.
+  return (
+    <div className="font-mono text-meta flex-1 min-w-0 truncate">
+      {error && <span className="text-red-400">{error}</span>}
+      {!error && status === 'saving' && <span className="text-gold-200">Saving…</span>}
+      {!error && status === 'pending' && (
+        <span className="text-amber-400">Will save in a moment…</span>
+      )}
+      {!error && status === 'saved' && savedAt && (
+        <span className="text-green-400">
+          Saved at {savedAt.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      )}
+      {!error && status === 'idle' && counts.invalid > 0 && (
+        <span className="text-red-400">Fix invalid scores before saving</span>
+      )}
+      {!error && status === 'idle' && counts.invalid === 0 && counts.entered === 0 && (
+        <span className="text-ink-3">Enter scores above — they'll save automatically</span>
+      )}
+      {!error && status === 'idle' && counts.invalid === 0 && counts.entered > 0 && counts.dirty === 0 && (
+        <span className="text-ink-3">All caught up</span>
+      )}
     </div>
   );
 }
@@ -253,10 +295,15 @@ function ColumnTab({ column, active, onClick }) {
   );
 }
 
-function PupilScoreRow({ pupil, score, maxScore, onChange }) {
+function PupilScoreRow({ pupil, score, invalid = false, maxScore, onChange }) {
   const initials = pupil.full_name.split(/\s+/).slice(0, 2).map((s) => s[0]?.toUpperCase()).join('') || '?';
   return (
-    <div className="border-b border-line-1 last:border-0 flex items-center gap-s-4 px-s-4 py-s-3 min-h-[56px]">
+    <div className={cn(
+      'border-b border-line-1 last:border-0 flex items-center gap-s-4 px-s-4 py-s-3 min-h-[56px] transition-colors duration-150',
+      // Subtle row tint when the row has an invalid value — quick visual scan
+      // even when 28 pupils are visible.
+      invalid && 'bg-red-400/[0.04]',
+    )}>
       {pupil.photo_url ? (
         <img src={pupil.photo_url} alt="" className="w-[36px] h-[36px] rounded-full object-cover bg-surface-3 shrink-0" loading="lazy" />
       ) : (
@@ -269,17 +316,34 @@ function PupilScoreRow({ pupil, score, maxScore, onChange }) {
         {pupil.pupil_code && (
           <div className="font-mono text-[10px] text-ink-3 tracking-[0.06em] truncate">{pupil.pupil_code}</div>
         )}
+        {invalid && (
+          <div className="font-mono text-[10px] text-red-400 mt-[2px]">
+            Must be 0–{maxScore}
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-s-2 shrink-0">
         <input
-          type="number"
+          // type="text" instead of type="number" on purpose. The browser's
+          // built-in number validation strips values that exceed `max` —
+          // e.target.value comes back empty when the user types 25 with
+          // max=20, so our JS-level invalid flag never fires. Using text
+          // + inputMode="numeric" gets us the numeric keypad on mobile
+          // AND lets our setScore handler see what the user actually typed.
+          type="text"
           inputMode="numeric"
+          pattern="[0-9]*"
           value={score ?? ''}
           onChange={(e) => onChange(e.target.value)}
-          min={0}
-          max={maxScore}
           placeholder="–"
-          className="w-[72px] h-[44px] bg-surface-3 border border-line-2 rounded-r-2 px-s-3 text-[16px] text-ink-1 outline-none focus:border-gold-400 text-center font-mono tabular-nums"
+          aria-invalid={invalid}
+          className={cn(
+            'w-[72px] h-[44px] bg-surface-3 rounded-r-2 px-s-3 text-[16px] text-ink-1 outline-none text-center font-mono tabular-nums transition-colors duration-150',
+            'border',
+            invalid
+              ? 'border-red-400 focus:border-red-400'
+              : 'border-line-2 focus:border-gold-400',
+          )}
           aria-label={`Score for ${pupil.full_name}`}
         />
         <span className="font-mono text-[12px] text-ink-3 w-[24px]">/ {maxScore}</span>

@@ -13,10 +13,15 @@ import { AppShell } from '@/components/layout/AppShell';
 import { Card, KpiCard } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { useAuth } from '@/hooks/useAuth';
+import { getGreeting } from '@/utils/greeting';
 import { AttendanceClassPicker } from './AttendanceClassPicker';
 import { AttendanceEntry } from './AttendanceEntry';
 import { ScoresGradebookPicker } from './ScoresGradebookPicker';
 import { ScoresGradebook } from './ScoresGradebook';
+import { ReportsPicker } from './ReportsPicker';
+import { ReportsClassView } from './ReportsClassView';
+import { ReportEditor } from './ReportEditor';
+import { ReportCardPrint } from './ReportCardPrint';
 
 const NAV = [
   { to: '/app/teacher', label: 'Today', end: true },
@@ -35,7 +40,10 @@ export default function TeacherApp() {
       <Route path="lessons" element={<Placeholder title="Lessons" />} />
       <Route path="scores" element={<ScoresShell><ScoresGradebookPicker /></ScoresShell>} />
       <Route path="scores/grid" element={<ScoresShell><ScoresGradebook /></ScoresShell>} />
-      <Route path="reports" element={<Placeholder title="Reports" />} />
+      <Route path="reports" element={<ReportsShell><ReportsPicker /></ReportsShell>} />
+      <Route path="reports/:classId/:term/:year" element={<ReportsShell><ReportsClassView /></ReportsShell>} />
+      <Route path="reports/:classId/:term/:year/pupil/:pupilId" element={<ReportsShell><ReportEditor /></ReportsShell>} />
+      <Route path="reports/:classId/:term/:year/pupil/:pupilId/print" element={<ReportCardPrint />} />
     </Routes>
   );
 }
@@ -53,7 +61,7 @@ function TodayView() {
         <div className="mb-s-7">
           <div className="font-mono text-eyebrow uppercase text-gold-400">{dateLabel}</div>
           <h2 className="mt-s-3 font-display text-display-2 text-ink-0">
-            Good morning, <span className="ital-gold">{firstName}.</span>
+            {getGreeting()}, <span className="ital-gold">{firstName}.</span>
           </h2>
           <p className="mt-s-3 text-body text-ink-2 max-w-[60ch]">
             Two classes today. Attendance for Primary 3 Emerald is the first
@@ -158,6 +166,14 @@ function AttendanceShell({ children }) {
 function ScoresShell({ children }) {
   return (
     <AppShell title="Scores" navItems={NAV}>
+      {children}
+    </AppShell>
+  );
+}
+
+function ReportsShell({ children }) {
+  return (
+    <AppShell title="Reports" navItems={NAV}>
       {children}
     </AppShell>
   );

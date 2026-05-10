@@ -162,6 +162,25 @@ export function ReportEditor() {
         )}
       </Card>
 
+      {/* Subject scores — read-only breakdown.
+          Mirrors what'll appear on the printed report so the teacher can
+          see exactly what they're commenting on. Edits happen in the
+          gradebook, not here. */}
+      {(data.subjects?.length ?? 0) > 0 && (
+        <Card className="mb-s-5">
+          <div className="flex items-center justify-between mb-s-4">
+            <div className="font-mono text-eyebrow uppercase text-gold-400">Subject scores</div>
+            <Link
+              to={`/app/teacher/scores/grid?class_id=${data.class.id}&subject=${encodeURIComponent(data.subjects[0].subject)}&term=${term}&year=${yearNum}`}
+              className="text-[12.5px] text-gold-200 hover:text-gold-50 underline-offset-4 hover:underline"
+            >
+              Edit in gradebook →
+            </Link>
+          </div>
+          <SubjectScoreTable subjects={data.subjects} />
+        </Card>
+      )}
+
       {/* Overall comment */}
       <Card className="mb-s-5">
         <div className="flex items-center justify-between mb-s-4">
@@ -246,6 +265,65 @@ export function ReportEditor() {
 
 // ---- Small components -----------------------------------------------------
 
+/**
+ * Subject score breakdown — one row per subject with each column score
+ * + computed total and letter grade. Read-only, mirrors the print layout
+ * so what the teacher sees here is what the parent will see.
+ *
+ * Empty cells render as a dim em-dash, NOT zero. This matters: a teacher
+ * mid-term shouldn't see "0/20" for unentered cells (looks like the pupil
+ * scored zero) — they should see a placeholder that means "not yet".
+ */
+function SubjectScoreTable({ subjects }) {
+  // Use the first subject's column names for headers — assumes all subjects
+  // share the same component structure in a term, which matches Nigerian
+  // primary convention (CA1/CA2/Exam everywhere).
+  const headers = subjects[0]?.columns?.map((c) => c.name) ?? [];
+
+  return (
+    <div className="overflow-x-auto -mx-s-2 px-s-2">
+      <table className="w-full text-[13.5px] border-collapse">
+        <thead>
+          <tr className="text-left">
+            <th className="font-mono text-meta uppercase tracking-[0.14em] text-ink-3 pb-s-3 pr-s-4">Subject</th>
+            {headers.map((h) => (
+              <th key={h} className="font-mono text-meta uppercase tracking-[0.14em] text-ink-3 pb-s-3 px-s-3 text-center">{h}</th>
+            ))}
+            <th className="font-mono text-meta uppercase tracking-[0.14em] text-ink-3 pb-s-3 px-s-3 text-center">Total</th>
+            <th className="font-mono text-meta uppercase tracking-[0.14em] text-ink-3 pb-s-3 pl-s-3 text-center">Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          {subjects.map((s) => {
+            const total = computeSubjectTotal(s.columns);
+            const hasAny = (s.columns ?? []).some((c) => c.score != null);
+            return (
+              <tr key={s.subject} className="border-t border-line-1">
+                <td className="py-s-3 pr-s-4 text-ink-1">{s.subject}</td>
+                {s.columns.map((c) => (
+                  <td key={c.name} className="py-s-3 px-s-3 text-center font-mono tabular-nums">
+                    {c.score != null ? (
+                      <span className="text-ink-1">{c.score}<span className="text-ink-3 text-[11px]">/{c.max_score}</span></span>
+                    ) : (
+                      <span className="text-ink-3">—</span>
+                    )}
+                  </td>
+                ))}
+                <td className="py-s-3 px-s-3 text-center font-mono tabular-nums text-ink-0 font-medium">
+                  {hasAny ? `${total.weighted.toFixed(1)}%` : <span className="text-ink-3">—</span>}
+                </td>
+                <td className="py-s-3 pl-s-3 text-center font-display text-[16px] text-ink-0">
+                  {hasAny ? letterGrade(total.percentage) : <span className="text-ink-3">—</span>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function Stat({ label, value, bigger }) {
   return (
     <div>
@@ -309,21 +387,41 @@ function ErrorView({ message }) {
 
 // ---- Pure helpers --------------------------------------------------------
 
+/**
+ * Per-subject calculation: sums the weighted contributions across all
+ * entered columns. Returns:
+ *   - raw, max: simple totals (raw points / max points across entered cols)
+ *   - percentage: raw/max as %
+ *   - weighted: the weight-aware total used for the term grade. If the
+ *     subject's columns have weights summing to 100, this is the term %.
+ *
+ * Subjects with no entered scores yet return zeros — the caller decides
+ * whether to render them (the score table shows em-dash; computeOverall
+ * skips them).
+ */
+function computeSubjectTotal(columns = []) {
+  let raw = 0;
+  let max = 0;
+  let weighted = 0;
+  for (const c of columns) {
+    if (c.score != null && c.max_score > 0) {
+      raw += c.score;
+      max += c.max_score;
+      weighted += (c.score / c.max_score) * Number(c.weight ?? 0);
+    }
+  }
+  const percentage = max > 0 ? (raw / max) * 100 : 0;
+  return { raw, max, percentage, weighted };
+}
+
 function computeOverall(subjects) {
   if (subjects.length === 0) return { percentage: 0, grade: '—' };
   let totalWeighted = 0;
   let count = 0;
   for (const s of subjects) {
-    let weighted = 0;
-    let hasAny = false;
-    for (const c of s.columns ?? []) {
-      if (c.score != null && c.max_score > 0) {
-        weighted += (c.score / c.max_score) * Number(c.weight ?? 0);
-        hasAny = true;
-      }
-    }
-    if (hasAny) {
-      totalWeighted += weighted;
+    const t = computeSubjectTotal(s.columns);
+    if (t.max > 0) {
+      totalWeighted += t.weighted;
       count++;
     }
   }

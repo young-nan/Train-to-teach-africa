@@ -48,7 +48,8 @@ export function ReportCardPrint() {
     queryKey: ['report-data', pupilId, term, yearNum],
     queryFn: () => reportsService.getReportData({ pupilId, term, year: yearNum }),
     enabled: !!(pupilId && term && yearNum),
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Set document title to a meaningful name — default for "Save as PDF"
@@ -76,25 +77,52 @@ export function ReportCardPrint() {
 /**
  * Print stylesheet, scoped to this page only. Inline so the print rules
  * survive even when the rest of the app's CSS is hidden via @media print.
+ *
+ * TTA brand for paper:
+ *   - Cream background (#fdfaf3) prints with warmth, doesn't waste toner
+ *     vs pure white on coloured paper, and is close to school-stationery
+ *     standard.
+ *   - Deep navy (#1a2238) for primary text — readable, premium, reads
+ *     dark on a colour printer or as B&W on a laser.
+ *   - Restrained gold (#b8860b on paper, deeper than the screen gold) for
+ *     the header rule, overall grade callout, and signature divider.
+ *     Used sparingly so it stays meaningful.
  */
 function PrintStyles() {
   return (
     <style>{`
-      .report-print-root { font-family: 'Crimson Text', Georgia, serif; }
-      .report-print-root .ui-mono { font-family: 'Space Grotesk', monospace; }
+      .report-print-root {
+        font-family: 'Crimson Text', Georgia, 'Times New Roman', serif;
+        color: #1a2238;
+        background: #fdfaf3;
+      }
+      .report-print-root .ui-mono {
+        font-family: 'Space Grotesk', 'Helvetica Neue', sans-serif;
+        font-feature-settings: 'tnum';
+      }
+      .report-print-root .ui-display {
+        font-family: 'Crimson Text', Georgia, serif;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .tta-gold { color: #b8860b; }
+      .tta-gold-bg { background: #b8860b; }
+      .tta-rule { border-color: #b8860b; }
 
       @page { size: A4; margin: 14mm 12mm; }
 
       @media print {
         .no-print { display: none !important; }
         .report-print-root {
-          background: white !important;
-          color: black !important;
-          /* A4 width to match the print layout when previewed on screen */
+          background: #fdfaf3 !important;
+          color: #1a2238 !important;
           width: 210mm;
           margin: 0 auto;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
-        body { background: white !important; }
+        body { background: #fdfaf3 !important; }
         .page-break { break-after: page; }
         .avoid-break { break-inside: avoid; }
       }
@@ -105,7 +133,7 @@ function PrintStyles() {
           min-height: 297mm;
           margin: 24px auto;
           padding: 14mm 12mm;
-          box-shadow: 0 0 24px rgba(0,0,0,0.08);
+          box-shadow: 0 0 24px rgba(0,0,0,0.12);
         }
       }
     `}</style>
@@ -160,30 +188,58 @@ function ReportSheet({ data, term, year }) {
 
 function Header({ school, term, year }) {
   return (
-    <header className="avoid-break border-b-[3px] border-black pb-3 mb-5">
+    <header className="avoid-break pb-3 mb-5">
       <div className="flex items-center gap-4">
         {school?.logo_url ? (
-          <img src={school.logo_url} alt="" className="h-[60px] w-[60px] object-contain" />
+          <img src={school.logo_url} alt="" className="h-[64px] w-[64px] object-contain" />
         ) : (
-          <div className="h-[60px] w-[60px] border border-gray-400 grid place-items-center text-[8pt] text-gray-500">
-            LOGO
-          </div>
+          <CompassSunMark />
         )}
-        <div className="flex-1">
-          <h1 className="text-[20pt] font-bold tracking-tight">{school?.name ?? 'School Name'}</h1>
+        <div className="flex-1 min-w-0">
+          <h1 className="ui-display text-[22pt] tracking-tight leading-tight" style={{ color: '#1a2238' }}>
+            {school?.name ?? 'School Name'}
+          </h1>
           {school?.motto && (
-            <p className="text-[10pt] italic text-gray-700">{school.motto}</p>
+            <p className="text-[10pt] italic mt-0.5" style={{ color: '#5a6378' }}>
+              {school.motto}
+            </p>
           )}
-          <p className="text-[9pt] text-gray-600 ui-mono">
-            {[school?.city, school?.state].filter(Boolean).join(', ')}
+          <p className="text-[8.5pt] ui-mono uppercase tracking-wide mt-1" style={{ color: '#5a6378' }}>
+            {[school?.city, school?.state].filter(Boolean).join(' · ')}
             {school?.phone && <span> · {school.phone}</span>}
           </p>
         </div>
       </div>
-      <h2 className="text-[14pt] font-semibold mt-3 text-center uppercase tracking-wide">
-        {TERM_LABEL[term]} Report · Academic Year {year}/{year + 1}
-      </h2>
+      <div className="border-t-2 tta-rule mt-3 pt-2.5">
+        <h2 className="ui-display text-[13pt] text-center uppercase tracking-[0.18em]" style={{ color: '#1a2238' }}>
+          {TERM_LABEL[term]} Report &nbsp;·&nbsp; Academic Year {year}/{year + 1}
+        </h2>
+      </div>
     </header>
+  );
+}
+
+/**
+ * Inline Compass-Sun fallback for schools that haven't uploaded a logo.
+ * Drawn in TTA gold so it's clearly a brand placeholder, not a missing asset.
+ */
+function CompassSunMark() {
+  return (
+    <svg viewBox="0 0 64 64" className="h-[64px] w-[64px]" aria-hidden="true">
+      {/* Half-circle horizon */}
+      <path d="M 8 40 A 24 24 0 0 1 56 40" fill="none" stroke="#b8860b" strokeWidth="2" />
+      {/* Sun rays */}
+      {[0, 45, 90, 135, 180].map((deg) => {
+        const rad = (deg * Math.PI) / 180;
+        const x1 = 32 - Math.cos(rad) * 18;
+        const y1 = 40 - Math.sin(rad) * 18;
+        const x2 = 32 - Math.cos(rad) * 26;
+        const y2 = 40 - Math.sin(rad) * 26;
+        return <line key={deg} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#b8860b" strokeWidth="1.5" strokeLinecap="round" />;
+      })}
+      {/* TT monogram */}
+      <text x="32" y="44" textAnchor="middle" fontSize="14" fontFamily="Crimson Text, serif" fontWeight="700" fill="#1a2238">TT</text>
+    </svg>
   );
 }
 
@@ -241,13 +297,12 @@ function SubjectsTable({ subjects }) {
       <table className="w-full border-collapse text-[10pt]">
         <thead>
           <tr className="bg-gray-100">
-            <th className="border border-black p-1.5 text-left font-semibold w-[28%]">Subject</th>
+            <th className="border border-black p-1.5 text-left font-semibold w-[40%]">Subject</th>
             {headers.map((h) => (
-              <th key={h} className="border border-black p-1.5 text-center font-semibold w-[10%]">{h}</th>
+              <th key={h} className="border border-black p-1.5 text-center font-semibold">{h}</th>
             ))}
-            <th className="border border-black p-1.5 text-center font-semibold w-[10%]">Total</th>
-            <th className="border border-black p-1.5 text-center font-semibold w-[8%]">Grade</th>
-            <th className="border border-black p-1.5 text-left font-semibold">Comment</th>
+            <th className="border border-black p-1.5 text-center font-semibold">Total</th>
+            <th className="border border-black p-1.5 text-center font-semibold">Grade</th>
           </tr>
         </thead>
         <tbody>
@@ -267,7 +322,6 @@ function SubjectsTable({ subjects }) {
                   {total.weighted.toFixed(1)}%
                 </td>
                 <td className="border border-black p-1.5 text-center font-semibold">{grade}</td>
-                <td className="border border-black p-1.5 text-[9pt] italic">{s.comment ?? ''}</td>
               </tr>
             );
           })}

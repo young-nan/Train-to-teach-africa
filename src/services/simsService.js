@@ -281,3 +281,35 @@ export async function getPupilsInClass(classId) {
   if (error) throw new Error(`Could not load pupils: ${error.message}`);
   return data ?? [];
 }
+
+/**
+ * Returns the calling parent's children. Resolved server-side via the
+ * parent_pupil_links table — RLS scopes the lookup to the authenticated
+ * user, so this works without passing the parent's user_id.
+ *
+ * Used by the parent app to list children and pick whose reports to view.
+ */
+export async function getMyChildren() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.id) throw new Error('Not signed in');
+
+  // Two-step: get pupil_ids from links, then hydrate pupil rows.
+  // Done as a single .select() with embedded join would be ideal, but
+  // PostgREST's syntax for join-then-filter is fragile — explicit beats
+  // implicit.
+  const { data: links, error: lerr } = await supabase
+    .from('parent_pupil_links')
+    .select('pupil_id')
+    .eq('parent_user_id', user.id);
+  if (lerr) throw new Error(`Could not load children: ${lerr.message}`);
+  if (!links?.length) return [];
+
+  const pupilIds = links.map((l) => l.pupil_id);
+  const { data: pupils, error: perr } = await supabase
+    .from('pupils')
+    .select('id, full_name, photo_url, pupil_code, level, class_id, classes(name, level)')
+    .in('id', pupilIds)
+    .order('full_name');
+  if (perr) throw new Error(`Could not load children: ${perr.message}`);
+  return pupils ?? [];
+}

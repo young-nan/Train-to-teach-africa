@@ -78,14 +78,32 @@ export async function createColumns({ classId, subject, term, year, columns }) {
  * never makes more than one read to render the gradebook.
  */
 export async function getGradebook({ classId, subject, term, year }) {
-  const { data, error } = await supabase.rpc('gradebook_grid', {
-    p_class_id: classId,
-    p_subject: subject,
-    p_term: term,
-    p_year: year,
-  });
-  if (error) throw new Error(`Could not load gradebook: ${error.message}`);
-  return data ?? { columns: [], pupils: [], scores: [] };
+  // Run the grid load and the lock check in parallel — both are cheap,
+  // saves a round-trip. The lock check needs the class's school_id, which
+  // we look up inline from the classes table.
+  const [gridRes, classRes] = await Promise.all([
+    supabase.rpc('gradebook_grid', {
+      p_class_id: classId,
+      p_subject: subject,
+      p_term: term,
+      p_year: year,
+    }),
+    supabase.from('classes').select('school_id').eq('id', classId).single(),
+  ]);
+  if (gridRes.error) throw new Error(`Could not load gradebook: ${gridRes.error.message}`);
+
+  let locked = false;
+  if (!classRes.error && classRes.data?.school_id) {
+    const { data: lockData } = await supabase.rpc('is_term_locked', {
+      p_school_id: classRes.data.school_id,
+      p_term: term,
+      p_year: year,
+    });
+    locked = !!lockData;
+  }
+
+  const grid = gridRes.data ?? { columns: [], pupils: [], scores: [] };
+  return { ...grid, locked };
 }
 
 // ---- Scores ---------------------------------------------------------------
@@ -115,6 +133,45 @@ export async function getGradebook({ classId, subject, term, year }) {
  *   3. Two queries per pupil instead of one is fine. A 30-pupil class
  *      saves in well under a second on 4G.
  */
+// ---- Term lock check ------------------------------------------------------
+
+/**
+ * Check whether a class's term is locked. Called by the gradebook UI on
+ * load so the inputs render disabled and the user gets immediate feedback,
+ * rather than seeing "Saved" optimistically and then having the write
+ * silently fail in the background drain.
+ *
+ * Returns false (unlocked) if no lock row exists yet — the default state.
+ */
+export async function isTermLocked({ classId, term, year }) {
+  // Resolve school_id from the class.
+  const { data: cls, error: cerr } = await supabase
+    .from('classes')
+    .select('school_id')
+    .eq('id', classId)
+    .single();
+  if (cerr) {
+    // If we can't resolve the school, fail closed (assume unlocked rather
+    // than block the UI). The pre-flight check inside saveColumnScores
+    // is the safety net.
+    console.warn('[gradebook] isTermLocked: could not resolve school', cerr.message);
+    return false;
+  }
+
+  const { data, error } = await supabase.rpc('is_term_locked', {
+    p_school_id: cls.school_id,
+    p_term: term,
+    p_year: year,
+  });
+  if (error) {
+    console.warn('[gradebook] is_term_locked RPC failed', error.message);
+    return false;
+  }
+  return Boolean(data);
+}
+
+// ---- Score writes ---------------------------------------------------------
+
 export async function saveColumnScores({ columnId, classId, scores, idempotencyKey }) {
   if (!scores?.length) return [];
 

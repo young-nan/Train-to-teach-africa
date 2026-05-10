@@ -6,9 +6,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "npm run lint:hooks",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .js,.jsx --max-warnings 0",
+    "lint:hooks": "eslint 'src/**/*.{js,jsx}' --no-eslintrc --parser-options=ecmaVersion:latest,sourceType:module,ecmaFeatures:{jsx:true} --plugin react-hooks --rule '{\"react-hooks/rules-of-hooks\":\"error\"}'",
     "format": "prettier --write \"src/**/*.{js,jsx,css,md}\"",
     "test": "vitest run",
     "test:watch": "vitest",

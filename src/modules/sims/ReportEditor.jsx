@@ -42,21 +42,24 @@ export function ReportEditor() {
     queryKey,
     queryFn: () => reportsService.getReportData({ pupilId, term, year: yearNum }),
     enabled: !!(pupilId && term && yearNum),
-    staleTime: 15_000,
+    // staleTime: 0 + refetchOnMount: 'always' — the report editor is a
+    // downstream view of data the teacher edits in the gradebook. Without
+    // this, the editor keeps showing the cached empty subjects array even
+    // after scores have been entered. Always fetching on mount adds one
+    // round-trip per editor open, which is fine for this surface (teachers
+    // only open the editor a handful of times per term).
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Local state for editable fields
   const [overallComment, setOverallComment] = useState('');
-  const [subjectComments, setSubjectComments] = useState({}); // {subject -> string}
   const [conduct, setConduct] = useState({});
 
   // Hydrate local state from server data once (or when pupil/term changes)
   useEffect(() => {
     if (!data) return;
     setOverallComment(data.overall_comment?.comment ?? '');
-    const sc = {};
-    (data.subjects ?? []).forEach((s) => { sc[s.subject] = s.comment ?? ''; });
-    setSubjectComments(sc);
     setConduct(data.conduct ?? {});
   }, [pupilId, term, yearNum]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -81,27 +84,6 @@ export function ReportEditor() {
     delay: 1_500,
   });
 
-  // ---- Auto-save: subject comments (one per subject) ----------------------
-  // Track which subject was last edited; auto-save fires on whichever changed
-  const [lastEditedSubject, setLastEditedSubject] = useState(null);
-  const subjectAutoSave = useDebouncedAutoSave({
-    save: async () => {
-      if (!lastEditedSubject) return;
-      const txt = subjectComments[lastEditedSubject];
-      if (!txt?.trim()) return;
-      await reportsService.saveSubjectComment({
-        pupilId,
-        classId: data.class.id,
-        subject: lastEditedSubject,
-        term,
-        year: yearNum,
-        comment: txt.trim(),
-        writtenBy: user.id,
-      });
-    },
-    delay: 1_500,
-  });
-
   // ---- Auto-save: conduct -------------------------------------------------
   const conductAutoSave = useDebouncedAutoSave({
     save: async () => {
@@ -113,11 +95,21 @@ export function ReportEditor() {
     delay: 1_000,
   });
 
+  // RULES OF HOOKS: useMemo must be called on every render, BEFORE any
+  // conditional returns. The earlier shape of this file had useMemo after
+  // `if (isLoading) return <Loading />` which crashed with React error #310
+  // ("Rendered more hooks than during the previous render") the moment data
+  // arrived. Compute against `data?.subjects ?? []` so it's safe when data
+  // is undefined.
+  const overall = useMemo(
+    () => computeOverall(data?.subjects ?? []),
+    [data?.subjects],
+  );
+
   if (isLoading) return <Loading />;
   if (error) return <ErrorView message={error.message} />;
   if (!data) return <ErrorView message="No data found." />;
 
-  const overall = useMemo(() => computeOverall(data.subjects ?? []), [data.subjects]);
   const status = data.report_envelope?.status ?? 'draft';
   const reportId = data.report_envelope?.id;
   const printHref = `/app/teacher/reports/${classId}/${term}/${yearNum}/pupil/${pupilId}/print`;
@@ -169,37 +161,6 @@ export function ReportEditor() {
           </p>
         )}
       </Card>
-
-      {/* Per-subject comments */}
-      {(data.subjects ?? []).length > 0 && (
-        <Card className="mb-s-5">
-          <div className="flex items-center justify-between mb-s-4">
-            <div className="font-mono text-eyebrow uppercase text-gold-400">Subject comments</div>
-            <SaveStatus status={subjectAutoSave.status} savedAt={subjectAutoSave.savedAt} error={subjectAutoSave.error} />
-          </div>
-          <div className="space-y-s-4">
-            {data.subjects.map((s) => (
-              <div key={s.subject}>
-                <label className="font-mono text-meta uppercase tracking-[0.14em] text-ink-3 mb-s-2 block">
-                  {s.subject}
-                </label>
-                <textarea
-                  value={subjectComments[s.subject] ?? ''}
-                  onChange={(e) => {
-                    setSubjectComments({ ...subjectComments, [s.subject]: e.target.value });
-                    setLastEditedSubject(s.subject);
-                    subjectAutoSave.markDirty();
-                  }}
-                  rows={2}
-                  maxLength={500}
-                  placeholder={`Comment on this pupil's ${s.subject} performance…`}
-                  className="w-full bg-surface-3 border border-line-2 rounded-r-2 px-s-4 py-s-3 text-[14px] text-ink-1 outline-none focus:border-gold-400 resize-none"
-                />
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
 
       {/* Overall comment */}
       <Card className="mb-s-5">

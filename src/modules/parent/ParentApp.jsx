@@ -12,6 +12,9 @@ import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
+import { getGreeting } from '@/utils/greeting';
+import { ParentReportsView } from './ParentReportsView';
+import { ReportCardPrint } from '@/modules/sims/ReportCardPrint';
 
 const NAV = [
   { to: '/app/parent', label: 'Tonight', end: true },
@@ -25,7 +28,12 @@ export default function ParentApp() {
     <Routes>
       <Route index element={<TonightView />} />
       <Route path="children" element={<Placeholder title="Children" />} />
-      <Route path="reports" element={<Placeholder title="Reports" />} />
+      <Route path="reports" element={<ReportsShell><ParentReportsView /></ReportsShell>} />
+      {/* Parent's print-preview route. Reuses the same ReportCardPrint component
+          the teacher uses — RLS on term_reports limits the parent to only
+          their own children's PUBLISHED reports, so security is enforced
+          at the data layer regardless of which UI route lands here. */}
+      <Route path="reports/:pupilId/:term/:year/print" element={<ReportCardPrint />} />
       <Route path="billing" element={<Placeholder title="Billing" />} />
     </Routes>
   );
@@ -40,7 +48,7 @@ function TonightView() {
         <div className="mb-s-7">
           <div className="font-mono text-eyebrow uppercase text-gold-400">Tonight's home support</div>
           <h2 className="mt-s-3 font-display text-display-2 text-ink-0">
-            Hello, <span className="ital-gold">{firstName}.</span>
+            {getGreeting()}, <span className="ital-gold">{firstName}.</span>
           </h2>
         </div>
 
@@ -109,6 +117,14 @@ function Placeholder({ title }) {
         <div className="font-display text-display-3 text-ink-0">{title}</div>
         <p className="mt-s-3 text-body text-ink-2">Built from the same patterns as the Tonight view.</p>
       </Card>
+    </AppShell>
+  );
+}
+
+function ReportsShell({ children }) {
+  return (
+    <AppShell title="Reports" navItems={NAV}>
+      {children}
     </AppShell>
   );
 }

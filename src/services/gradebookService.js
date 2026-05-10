@@ -98,33 +98,94 @@ export async function getGradebook({ classId, subject, term, year }) {
  * conflict target is (gradebook_column_id, pupil_id) which is unique.
  * Replaying the batch is safe.
  */
+/**
+ * Save a batch of scores for a single column.
+ *
+ * Implementation note: we use lookup-then-update-or-insert rather than
+ * upsert with onConflict. Reasons:
+ *
+ *   1. TLF Lekki SIMS has been doing this in production for years. It works.
+ *   2. PostgREST's upsert with `onConflict` requires a matching unique
+ *      constraint. Partial unique indexes (which we use because a score
+ *      can belong to a gradebook_column OR an assessment, not both) are
+ *      finicky to use as conflict targets. If the index name or shape
+ *      doesn't match what PostgREST expects, the upsert fails with
+ *      "no unique or exclusion constraint matching" and the row vanishes
+ *      into the offline queue's failure pile.
+ *   3. Two queries per pupil instead of one is fine. A 30-pupil class
+ *      saves in well under a second on 4G.
+ */
 export async function saveColumnScores({ columnId, classId, scores, idempotencyKey }) {
-  const rows = scores.map((s) => ({
-    gradebook_column_id: columnId,
-    class_id: classId,
-    pupil_id: s.pupilId,
-    score: s.score,
-    max_score: s.maxScore,
-    idempotency_key: idempotencyKey,
-    // assessment_id is null — score belongs to a column instead
-  }));
-  const { data, error } = await supabase
+  if (!scores?.length) return [];
+
+  // Step 1: fetch existing scores for these pupils in this column.
+  const pupilIds = scores.map((s) => s.pupilId);
+  const { data: existing, error: selErr } = await supabase
     .from('scores')
-    .upsert(rows, { onConflict: 'gradebook_column_id,pupil_id' })
-    .select();
-  if (error) throw new Error(`Could not save scores: ${error.message}`);
+    .select('id, pupil_id, score')
+    .eq('gradebook_column_id', columnId)
+    .in('pupil_id', pupilIds);
+  if (selErr) throw new Error(`Could not load existing scores: ${selErr.message}`);
+
+  const byPupil = new Map((existing ?? []).map((r) => [r.pupil_id, r]));
+
+  // Step 2: split into updates and inserts.
+  const toUpdate = [];
+  const toInsert = [];
+  for (const s of scores) {
+    const found = byPupil.get(s.pupilId);
+    if (found) {
+      // Skip writes where the value is unchanged — saves a round-trip.
+      if (found.score !== s.score) {
+        toUpdate.push({ id: found.id, score: s.score });
+      }
+    } else {
+      toInsert.push({
+        gradebook_column_id: columnId,
+        class_id: classId,
+        pupil_id: s.pupilId,
+        score: s.score,
+        max_score: s.maxScore,
+        idempotency_key: idempotencyKey,
+        // assessment_id is null — score belongs to a column instead
+      });
+    }
+  }
+
+  // Step 3: execute. Updates one by one (small N, can't bulk-update by ID
+  // in supabase-js without an RPC). Inserts as one batch.
+  const results = [];
+  for (const u of toUpdate) {
+    const { data, error } = await supabase
+      .from('scores')
+      .update({ score: u.score })
+      .eq('id', u.id)
+      .select()
+      .single();
+    if (error) throw new Error(`Could not update score: ${error.message}`);
+    results.push(data);
+  }
+  if (toInsert.length > 0) {
+    const { data, error } = await supabase
+      .from('scores')
+      .insert(toInsert)
+      .select();
+    if (error) throw new Error(`Could not insert scores: ${error.message}`);
+    results.push(...(data ?? []));
+  }
 
   logAuditEvent({
     action: 'gradebook.scores_saved',
     details: {
       column_id: columnId,
       class_id: classId,
-      score_count: rows.length,
+      updated: toUpdate.length,
+      inserted: toInsert.length,
       idempotency_key: idempotencyKey,
     },
   });
 
-  return data;
+  return results;
 }
 
 // ---- Term grade aggregation (used by parent app, reports) -----------------

@@ -121,6 +121,12 @@ function GradebookEntryView({ classId, cls, subject, term, year, grid, onBack })
   const activeColumn = grid.columns.find((c) => c.id === activeColumnId);
   const qc = useQueryClient();
 
+  // The lock status arrives as part of the grid fetch (see getGradebook).
+  // When true, score inputs become read-only and the user sees a banner.
+  // Without this check, edits go to the offline queue and silently fail
+  // when the lock check fires later in the background sync.
+  const locked = !!grid.locked;
+
   // Pre-filter scores for the active column.
   const existingScores = useMemo(
     () => (grid.scores ?? []).filter((s) => s.gradebook_column_id === activeColumnId),
@@ -162,9 +168,12 @@ function GradebookEntryView({ classId, cls, subject, term, year, grid, onBack })
 
   // Wrap setScore so every keystroke marks dirty and resets the debounce.
   const handleScoreChange = useCallback((pupilId, value) => {
+    // Hard guard. Even if a disabled input somehow fires onChange (e.g.
+    // pasted programmatically), we refuse the edit when the term is locked.
+    if (locked) return;
     setScore(pupilId, value);
     markDirty();
-  }, [setScore, markDirty]);
+  }, [setScore, markDirty, locked]);
 
   const termLabel = ({ term_1: 'Term 1', term_2: 'Term 2', term_3: 'Term 3' }[term] ?? term);
 
@@ -201,6 +210,19 @@ function GradebookEntryView({ classId, cls, subject, term, year, grid, onBack })
         </div>
       </div>
 
+      {/* Locked banner — when a head teacher closes the term, scores
+          freeze. Inputs disable; save bar disables. The teacher sees
+          this banner instead of typing into a void. */}
+      {locked && (
+        <div className="mt-s-5 mb-s-4 px-s-4 py-s-3 bg-amber-400/10 border border-amber-400/30 rounded-r-2 flex items-center gap-s-3">
+          <span className="font-mono text-eyebrow uppercase text-amber-400 shrink-0">Term locked</span>
+          <span className="text-[13px] text-ink-2">
+            This term has been closed by a head teacher. Scores can no longer
+            be changed. Contact your head teacher if you need to unlock it.
+          </span>
+        </div>
+      )}
+
       {/* Counts summary */}
       <div className="flex items-center gap-s-3 flex-wrap mt-s-5 mb-s-4 px-s-1">
         <Chip variant="gold" dot>
@@ -232,6 +254,7 @@ function GradebookEntryView({ classId, cls, subject, term, year, grid, onBack })
               score={entry.score}
               invalid={entry.invalid}
               maxScore={activeColumn?.max_score}
+              readOnly={locked}
               onChange={(v) => handleScoreChange(pupil.id, v)}
             />
           );
@@ -247,7 +270,7 @@ function GradebookEntryView({ classId, cls, subject, term, year, grid, onBack })
             onClick={flush}
             isLoading={saveStatus === 'saving'}
             className="flex-1 sm:flex-initial justify-center min-w-[180px]"
-            disabled={counts.dirty === 0 || counts.invalid > 0}
+            disabled={locked || counts.dirty === 0 || counts.invalid > 0}
           >
             Save {activeColumn?.name}
           </Button>
@@ -312,7 +335,7 @@ function ColumnTab({ column, active, onClick }) {
   );
 }
 
-function PupilScoreRow({ pupil, score, invalid = false, maxScore, onChange }) {
+function PupilScoreRow({ pupil, score, invalid = false, maxScore, readOnly = false, onChange }) {
   const initials = pupil.full_name.split(/\s+/).slice(0, 2).map((s) => s[0]?.toUpperCase()).join('') || '?';
   return (
     <div className={cn(
@@ -354,9 +377,12 @@ function PupilScoreRow({ pupil, score, invalid = false, maxScore, onChange }) {
           onChange={(e) => onChange(e.target.value)}
           placeholder="–"
           aria-invalid={invalid}
+          readOnly={readOnly}
+          tabIndex={readOnly ? -1 : 0}
           className={cn(
             'w-[72px] h-[44px] bg-surface-3 rounded-r-2 px-s-3 text-[16px] text-ink-1 outline-none text-center font-mono tabular-nums transition-colors duration-150',
             'border',
+            readOnly && 'opacity-60 cursor-not-allowed',
             invalid
               ? 'border-red-400 focus:border-red-400'
               : 'border-line-2 focus:border-gold-400',

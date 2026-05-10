@@ -15,6 +15,7 @@ import { Card, KpiCard } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { useAuth } from '@/hooks/useAuth';
 import * as simsService from '@/services/simsService';
+import { PupilImportView } from './PupilImportView';
 
 const NAV = [
   { to: '/app/admin', label: 'Overview', end: true },
@@ -29,7 +30,8 @@ export default function AdminApp() {
   return (
     <Routes>
       <Route index element={<OverviewView />} />
-      <Route path="enrollments" element={<Placeholder title="Enrolments" />} />
+      <Route path="enrollments" element={<EnrollmentsView />} />
+      <Route path="pupils/import" element={<EnrollmentsShell><PupilImportView /></EnrollmentsShell>} />
       <Route path="staff" element={<Placeholder title="Staff" />} />
       <Route path="billing" element={<Placeholder title="Billing" />} />
       <Route path="curriculum" element={<Placeholder title="Curriculum" />} />
@@ -119,5 +121,56 @@ function Placeholder({ title }) {
     <AppShell title={title} navItems={NAV}>
       <Card><div className="font-display text-display-3 text-ink-0">{title}</div></Card>
     </AppShell>
+  );
+}
+
+function EnrollmentsShell({ children }) {
+  return (
+    <AppShell title="Enrolments" navItems={NAV}>
+      {children}
+    </AppShell>
+  );
+}
+
+/**
+ * Enrolments overview. In v1 this is a simple jump-off to the bulk
+ * importer; per-pupil edit / class assignment comes in v1.1.
+ */
+function EnrollmentsView() {
+  return (
+    <EnrollmentsShell>
+      <div className="max-w-[820px]">
+        <div className="mb-s-7">
+          <div className="font-mono text-eyebrow uppercase text-gold-400">Enrolments</div>
+          <h2 className="mt-s-3 font-display text-display-2 text-ink-0">
+            Add pupils to the school.
+          </h2>
+          <p className="mt-s-3 text-body text-ink-2 max-w-[58ch]">
+            Bulk-import pupils from a CSV. The fastest path for a new
+            school is to paste your existing class lists; the system
+            will validate every row before saving anything.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-s-4">
+          <a href="/app/admin/pupils/import" className="block bg-surface-2 border border-line-1 rounded-r-3 p-s-6 hover:border-gold-400/40 hover:bg-surface-3 transition-all duration-150">
+            <div className="font-mono text-eyebrow uppercase text-gold-400">Bulk import</div>
+            <h3 className="mt-s-2 font-display text-display-3 text-ink-0">Paste a CSV</h3>
+            <p className="mt-s-3 text-[13.5px] text-ink-2">
+              Add many pupils at once. Validates each row before insert.
+            </p>
+            <div className="mt-s-5 text-gold-200 text-[13px]">Open importer →</div>
+          </a>
+          <div className="bg-surface-2 border border-line-1 rounded-r-3 p-s-6 opacity-60">
+            <div className="font-mono text-eyebrow uppercase text-ink-3">Coming in v1.1</div>
+            <h3 className="mt-s-2 font-display text-display-3 text-ink-0">Add one pupil</h3>
+            <p className="mt-s-3 text-[13.5px] text-ink-3">
+              Single-pupil form for mid-term arrivals. For now, add via
+              the bulk importer with one row.
+            </p>
+          </div>
+        </div>
+      </div>
+    </EnrollmentsShell>
   );
 }

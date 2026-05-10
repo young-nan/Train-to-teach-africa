@@ -123,6 +123,33 @@ export async function pending() {
   }
 }
 
+/**
+ * Failed items — writes that exhausted their retry budget (default 5).
+ * These need human attention. The SyncPill surfaces this as a red state.
+ */
+export async function failed() {
+  try {
+    const db = await getDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readonly');
+      const req = tx.objectStore(STORE).index('byStatus').getAll('failed');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) {
+    return Array.from(memoryQueue.values()).filter((i) => i.status === 'failed');
+  }
+}
+
+/**
+ * Clear a single failed item — used when the user dismisses the error
+ * after seeing it (e.g. they understand the term is locked, no point
+ * keeping the dead row around).
+ */
+export async function dismissFailed(id) {
+  return remove(id);
+}
+
 export async function remove(id) {
   try {
     const db = await getDb();

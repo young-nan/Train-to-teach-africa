@@ -118,6 +118,27 @@ export async function getGradebook({ classId, subject, term, year }) {
 export async function saveColumnScores({ columnId, classId, scores, idempotencyKey }) {
   if (!scores?.length) return [];
 
+  // Pre-flight: refuse if the term is locked. We need the column's term/year
+  // to check, so this is one extra round-trip — cheap, and prevents the
+  // alternative of a confusing RLS error from a database constraint.
+  const { data: column, error: colErr } = await supabase
+    .from('gradebook_columns')
+    .select('term, year, class_id, classes(school_id)')
+    .eq('id', columnId)
+    .single();
+  if (colErr) throw new Error(`Could not verify column: ${colErr.message}`);
+  const schoolId = column.classes?.school_id;
+  if (schoolId) {
+    const { data: locked } = await supabase.rpc('is_term_locked', {
+      p_school_id: schoolId,
+      p_term: column.term,
+      p_year: column.year,
+    });
+    if (locked) {
+      throw new Error(`This term is locked. Scores can no longer be edited. Contact a head teacher to unlock if needed.`);
+    }
+  }
+
   // Step 1: fetch existing scores for these pupils in this column.
   const pupilIds = scores.map((s) => s.pupilId);
   const { data: existing, error: selErr } = await supabase

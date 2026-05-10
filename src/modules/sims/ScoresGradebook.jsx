@@ -119,6 +119,7 @@ export function ScoresGradebook() {
 function GradebookEntryView({ classId, cls, subject, term, year, grid, onBack }) {
   const [activeColumnId, setActiveColumnId] = useState(grid.columns[0]?.id);
   const activeColumn = grid.columns.find((c) => c.id === activeColumnId);
+  const qc = useQueryClient();
 
   // Pre-filter scores for the active column.
   const existingScores = useMemo(
@@ -127,13 +128,29 @@ function GradebookEntryView({ classId, cls, subject, term, year, grid, onBack })
   );
 
   const {
-    grid: rowGrid, counts, setScore, save, error,
+    grid: rowGrid, counts, setScore, save: rawSave, error,
   } = useGradebookColumn({
     column: activeColumn,
     classId,
     pupils: grid.pupils,
     existingScores,
   });
+
+  // Wrap save() so it invalidates the report-data query for any pupil whose
+  // score just changed. Without this, the report editor and print preview
+  // keep showing stale data — the gradebook says "saved" but the report
+  // says "no scores entered." The cache key for report data uses pupilId,
+  // so we invalidate broadly: any query starting with ['report-data'].
+  const save = useCallback(async () => {
+    await rawSave();
+    // Fire-and-forget invalidation. If it fails (which it shouldn't), the
+    // user still sees their save succeeded; downstream views will refetch
+    // on next mount anyway thanks to refetchOnMount: 'always'.
+    qc.invalidateQueries({ queryKey: ['report-data'] });
+    // Also invalidate the gradebook grid so the next reopen shows the
+    // saved scores rather than re-using the cached pre-save state.
+    qc.invalidateQueries({ queryKey: ['gradebook', classId, subject, term, year] });
+  }, [rawSave, qc, classId, subject, term, year]);
 
   // Auto-save: 1.5s after the last edit, or immediately when the teacher
   // taps "Save now" (which calls flush). The save() returned by the hook

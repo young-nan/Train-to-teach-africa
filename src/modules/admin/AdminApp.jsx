@@ -16,6 +16,8 @@ import { Chip } from '@/components/ui/Chip';
 import { useAuth } from '@/hooks/useAuth';
 import * as simsService from '@/services/simsService';
 import { PupilImportView } from './PupilImportView';
+import { PupilSingleAddView } from './PupilSingleAddView';
+import { StaffView } from './StaffView';
 
 const NAV = [
   { to: '/app/admin', label: 'Overview', end: true },
@@ -32,7 +34,8 @@ export default function AdminApp() {
       <Route index element={<OverviewView />} />
       <Route path="enrollments" element={<EnrollmentsView />} />
       <Route path="pupils/import" element={<EnrollmentsShell><PupilImportView /></EnrollmentsShell>} />
-      <Route path="staff" element={<Placeholder title="Staff" />} />
+      <Route path="pupils/add" element={<EnrollmentsShell><PupilSingleAddView /></EnrollmentsShell>} />
+      <Route path="staff" element={<StaffShell><StaffView /></StaffShell>} />
       <Route path="billing" element={<Placeholder title="Billing" />} />
       <Route path="curriculum" element={<Placeholder title="Curriculum" />} />
       <Route path="alerts" element={<Placeholder title="Alerts" />} />
@@ -132,6 +135,14 @@ function EnrollmentsShell({ children }) {
   );
 }
 
+function StaffShell({ children }) {
+  return (
+    <AppShell title="Staff" navItems={NAV}>
+      {children}
+    </AppShell>
+  );
+}
+
 /**
  * Enrolments overview. In v1 this is a simple jump-off to the bulk
  * importer; per-pupil edit / class assignment comes in v1.1.
@@ -161,14 +172,14 @@ function EnrollmentsView() {
             </p>
             <div className="mt-s-5 text-gold-200 text-[13px]">Open importer →</div>
           </a>
-          <div className="bg-surface-2 border border-line-1 rounded-r-3 p-s-6 opacity-60">
-            <div className="font-mono text-eyebrow uppercase text-ink-3">Coming in v1.1</div>
+          <a href="/app/admin/pupils/add" className="block bg-surface-2 border border-line-1 rounded-r-3 p-s-6 hover:border-gold-400/40 hover:bg-surface-3 transition-all duration-150">
+            <div className="font-mono text-eyebrow uppercase text-gold-400">Single pupil</div>
             <h3 className="mt-s-2 font-display text-display-3 text-ink-0">Add one pupil</h3>
-            <p className="mt-s-3 text-[13.5px] text-ink-3">
-              Single-pupil form for mid-term arrivals. For now, add via
-              the bulk importer with one row.
+            <p className="mt-s-3 text-[13.5px] text-ink-2">
+              One-at-a-time form for mid-term arrivals or small rosters.
             </p>
-          </div>
+            <div className="mt-s-5 text-gold-200 text-[13px]">Open form →</div>
+          </a>
         </div>
       </div>
     </EnrollmentsShell>

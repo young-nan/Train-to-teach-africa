@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import * as pupilImportService from '@/services/pupilImportService';
 import * as staffService from '@/services/staffService';
+import * as photoUploadService from '@/services/photoUploadService';
 import { supabase } from '@/lib/supabase';
 import { logAuditEvent } from '@/services/auditService';
 import { cn } from '@/utils/cn';
@@ -53,6 +54,11 @@ export function PupilSingleAddView() {
     date_of_birth: '',
     level: '',
   });
+
+  // Passport photo: kept as File until submit; uploaded only after pupil row
+  // is inserted (so the storage path can use the new pupil_id).
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
 
   // ---- Parent section state -----------------------------------------------
   const [parentOpen, setParentOpen] = useState(false);
@@ -115,6 +121,31 @@ export function PupilSingleAddView() {
         details: { pupil_code: pupilRow.pupil_code, class_id: cls.id, parent_attached: parentOpen },
       });
 
+      // ---- Step 1.5 (optional): upload passport photo --------------------
+      // We need pupil.id before we can name the storage object, hence
+      // this happens *after* the pupil insert. If upload fails, the pupil
+      // stays — admin can re-upload later.
+      if (photoFile) {
+        try {
+          const photoPath = await photoUploadService.uploadPupilPhoto({
+            file: photoFile,
+            schoolId,
+            pupilId: pupil.id,
+          });
+          await supabase
+            .from('pupils')
+            .update({ photo_url: photoPath })
+            .eq('id', pupil.id);
+        } catch (photoErr) {
+          // Non-fatal — return a warning alongside success
+          console.warn('[pupil] photo upload failed:', photoErr.message);
+          return {
+            pupil,
+            photoError: photoErr.message,
+          };
+        }
+      }
+
       // ---- Step 2 (optional): invite/link parent --------------------------
       let parentResult = null;
       if (parentOpen) {
@@ -147,6 +178,8 @@ export function PupilSingleAddView() {
         pupil_code: '',
         date_of_birth: '',
       }));
+      setPhotoFile(null);
+      setPhotoPreview(null);
       setParent({ full_name: '', email: '', phone: '', mode: 'invite', temporary_password: '' });
       setParentOpen(false);
       if (form.class_id) setSearchParams({ class_id: form.class_id }, { replace: true });
@@ -204,16 +237,41 @@ export function PupilSingleAddView() {
             />
           </Field>
 
-          <Field label="Pupil code *" hint="Unique within your school. Used for student login.">
-            <input
-              type="text"
-              value={form.pupil_code}
-              onChange={(e) => updateForm('pupil_code', e.target.value.toUpperCase().replace(/\s+/g, '-'))}
-              required
-              autoComplete="off"
-              placeholder="e.g. ADAEZE-3E"
-              className="bg-surface-3 border border-line-2 rounded-r-2 px-s-4 py-s-3 text-[14.5px] font-mono text-ink-1 outline-none focus:border-gold-400"
-            />
+          <Field label="Pupil code *" hint="Unique within your school. Auto-generated if you click Generate.">
+            <div className="flex gap-s-2">
+              <input
+                type="text"
+                value={form.pupil_code}
+                onChange={(e) => updateForm('pupil_code', e.target.value.toUpperCase().replace(/\s+/g, '-'))}
+                required
+                autoComplete="off"
+                placeholder="e.g. TLF-P145"
+                className="flex-1 bg-surface-3 border border-line-2 rounded-r-2 px-s-4 py-s-3 text-[14.5px] font-mono text-ink-1 outline-none focus:border-gold-400"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  const cls = (classes ?? []).find((c) => c.id === form.class_id);
+                  if (!cls) {
+                    alert('Pick a class first — code depends on the level.');
+                    return;
+                  }
+                  try {
+                    const code = await pupilImportService.nextPupilCode({
+                      schoolId,
+                      level: form.level || cls.level,
+                    });
+                    updateForm('pupil_code', code);
+                  } catch (e) {
+                    alert(e.message);
+                  }
+                }}
+                disabled={!form.class_id}
+                className="px-s-4 py-s-3 bg-surface-3 border border-line-2 rounded-r-2 text-[13px] text-gold-200 hover:border-gold-400/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Generate
+              </button>
+            </div>
           </Field>
 
           <div className="grid sm:grid-cols-2 gap-s-4">
@@ -237,6 +295,51 @@ export function PupilSingleAddView() {
               />
             </Field>
           </div>
+
+          {/* Passport photograph — optional. Compressed client-side before
+              upload to keep the request small on Nigerian mobile networks. */}
+          <Field label="Passport photograph" hint="JPEG, PNG, or HEIC. Compressed automatically.">
+            <div className="flex items-center gap-s-4">
+              {photoPreview ? (
+                <img
+                  src={photoPreview}
+                  alt=""
+                  className="w-[72px] h-[72px] rounded-r-2 object-cover bg-surface-3 border border-line-2"
+                />
+              ) : (
+                <div className="w-[72px] h-[72px] rounded-r-2 bg-surface-3 border border-line-2 grid place-items-center text-ink-3 text-[10px] font-mono uppercase">
+                  No photo
+                </div>
+              )}
+              <div className="flex-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    setPhotoFile(file);
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (ev) => setPhotoPreview(ev.target.result);
+                      reader.readAsDataURL(file);
+                    } else {
+                      setPhotoPreview(null);
+                    }
+                  }}
+                  className="block text-[13px] text-ink-2 file:mr-s-3 file:px-s-4 file:py-s-2 file:rounded-r-2 file:border-0 file:bg-surface-3 file:text-ink-1 file:text-[13px] file:cursor-pointer hover:file:bg-line-1"
+                />
+                {photoFile && (
+                  <button
+                    type="button"
+                    onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
+                    className="text-[11.5px] text-ink-3 hover:text-red-400 mt-s-1"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          </Field>
 
           {/* Parent details section — collapsed by default so admins doing
               fast roster entry without parent info aren't slowed down. */}

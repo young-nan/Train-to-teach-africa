@@ -257,14 +257,29 @@ export async function getAttendanceTrend({ schoolId, days = 14 }) {
  * unions the legacy `classes.teacher_id` with the new join table so
  * existing single-teacher classes still appear.
  *
- * NOTE: the optional `teacherId` argument is now ignored for safety —
- * we always resolve from the authenticated user. Allowing arbitrary
- * teacherId here would let any authenticated user query any teacher's
- * classes by id, which RLS would block but is surprising at the API
- * level.
+ * Falls back to the legacy single-teacher query if the RPC isn't present
+ * — protects against migration drift bricking the gradebook.
  */
 export async function getMyClasses() {
-  const { data, error } = await supabase.rpc('my_taught_classes');
+  const rpc = await supabase.rpc('my_taught_classes');
+  if (!rpc.error) return rpc.data ?? [];
+
+  // RPC missing (migration not applied) → fall back to legacy column.
+  // The PostgREST error code for "function not found" is PGRST202.
+  const isMissingFn = rpc.error.code === 'PGRST202'
+    || /Could not find the function/i.test(rpc.error.message ?? '');
+  if (!isMissingFn) {
+    throw new Error(`Could not load classes: ${rpc.error.message}`);
+  }
+
+  console.warn('[sims] my_taught_classes RPC missing, using legacy query');
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.id) throw new Error('Not signed in');
+  const { data, error } = await supabase
+    .from('classes')
+    .select('id, name, level, pupil_count, school_id')
+    .eq('teacher_id', user.id)
+    .order('name');
   if (error) throw new Error(`Could not load classes: ${error.message}`);
   return data ?? [];
 }

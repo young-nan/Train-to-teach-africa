@@ -52,7 +52,7 @@ export function ScoresColumnSetup({ classMeta, subject, term, year, onSubmit, su
   };
   const remove = (i) => setComponents((cs) => cs.filter((_, idx) => idx !== i));
   const add = () => setComponents((cs) => [...cs, { name: '', maxScore: 0, weight: 0 }]);
-  const usePreset = (preset) => setComponents(preset);
+  const applyPreset = (preset) => setComponents(preset);
 
   const submit = () => {
     if (!weightOk) return;
@@ -81,9 +81,9 @@ export function ScoresColumnSetup({ classMeta, subject, term, year, onSubmit, su
       <Card className="mb-s-5">
         <div className="font-mono text-eyebrow uppercase text-gold-400 mb-s-3">Quick presets</div>
         <div className="flex flex-wrap gap-s-3">
-          <PresetButton label="2 CA + Exam (default)" onClick={() => usePreset(DEFAULT_COMPONENTS)} />
+          <PresetButton label="2 CA + Exam (default)" onClick={() => applyPreset(DEFAULT_COMPONENTS)} />
           {Object.entries(ALT_PRESETS).map(([label, preset]) => (
-            <PresetButton key={label} label={label} onClick={() => usePreset(preset)} />
+            <PresetButton key={label} label={label} onClick={() => applyPreset(preset)} />
           ))}
         </div>
       </Card>

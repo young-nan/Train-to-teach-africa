@@ -16,11 +16,13 @@
  * forward-dated rows look like data-quality bugs in the audit log.
  */
 
-import { useState, useMemo } from 'react';
+import { friendlyError } from '@/utils/friendlyError';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
+import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import * as simsService from '@/services/simsService';
 import { cn } from '@/utils/cn';
@@ -32,12 +34,23 @@ export function AttendanceClassPicker() {
   const todayIso = todayIsoString();
   const [selectedDate, setSelectedDate] = useState(todayIso);
 
-  const { data: classes, isLoading, error } = useQuery({
+  const { data: classes, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['teacher', 'classes'],
     queryFn: () => simsService.getMyClasses(),
     enabled: !!user?.id,
     staleTime: 5 * 60_000,
   });
+
+  // Surface "this is taking longer than expected" after 8s. Without this,
+  // a stuck query renders the skeleton forever and the user has no idea
+  // whether to wait, retry, or sign back in. Common on iOS Safari with
+  // flaky cellular handover.
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!isLoading) { setSlow(false); return; }
+    const t = setTimeout(() => setSlow(true), 8_000);
+    return () => clearTimeout(t);
+  }, [isLoading]);
 
   const isToday = selectedDate === todayIso;
   const isBackdated = selectedDate < todayIso;
@@ -66,16 +79,40 @@ export function AttendanceClassPicker() {
         minDate={isoDaysAgo(MAX_BACKDATE_DAYS)}
       />
 
-      {isLoading && <SkeletonList />}
+      {isLoading && !slow && <SkeletonList />}
+
+      {isLoading && slow && (
+        <Card className="border-amber-400/30 bg-amber-400/[0.04]">
+          <div className="font-display text-display-3 text-amber-400">Still loading…</div>
+          <p className="mt-s-3 text-body text-ink-2">
+            This is taking longer than expected. Your network may be slow,
+            or the server might be under load. Try refreshing — your work
+            won't be lost.
+          </p>
+          <div className="mt-s-5 flex gap-s-3">
+            <Button intent="primary" size="sm" onClick={() => refetch()} isLoading={isFetching}>
+              Try again
+            </Button>
+            <Button intent="ghost" size="sm" onClick={() => window.location.reload()}>
+              Refresh page
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {error && (
         <Card className="border-red-400/30 bg-red-400/[0.04]">
           <div className="font-display text-display-3 text-red-400">Could not load classes</div>
-          <p className="mt-s-3 text-body text-ink-2">{error.message}</p>
+          <p className="mt-s-3 text-body text-ink-2">{friendlyError(error)}</p>
+          <div className="mt-s-5">
+            <Button intent="primary" size="sm" onClick={() => refetch()} isLoading={isFetching}>
+              Try again
+            </Button>
+          </div>
         </Card>
       )}
 
-      {classes?.length === 0 && (
+      {!isLoading && !error && classes?.length === 0 && (
         <Card>
           <div className="font-display text-display-3 text-ink-0">No classes yet.</div>
           <p className="mt-s-3 text-body text-ink-2">

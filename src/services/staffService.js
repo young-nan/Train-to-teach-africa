@@ -103,3 +103,62 @@ function humanizeError(code, detail) {
     default: return `${code}${detail ? ': ' + detail : ''}`;
   }
 }
+
+// ---- Class assignments (many-to-many via class_teachers) ------------------
+
+/**
+ * Which classes is this teacher currently assigned to?
+ * Used by the staff edit panel to show + edit assignments.
+ */
+export async function getTeacherClasses(teacherId) {
+  const { data, error } = await supabase
+    .from('class_teachers')
+    .select('class_id, subject, classes(id, name, level)')
+    .eq('teacher_id', teacherId);
+  if (error) throw new Error(`Could not load classes: ${error.message}`);
+  return data ?? [];
+}
+
+/**
+ * Set a teacher's class assignments. `classIds` is the FULL desired set
+ * — we replace what's there, not append. Subject scoping is null for now
+ * (the staff form doesn't expose subject-level assignment in v1).
+ *
+ * Done as: delete all current rows, then insert the new ones. Two queries,
+ * but the operation is rare (admin re-assigning) and the data tiny.
+ */
+export async function setTeacherClasses({ teacherId, classIds }) {
+  // Delete existing assignments for this teacher
+  const { error: delErr } = await supabase
+    .from('class_teachers')
+    .delete()
+    .eq('teacher_id', teacherId);
+  if (delErr) throw new Error(`Could not clear assignments: ${delErr.message}`);
+
+  if (classIds.length === 0) {
+    logAuditEvent({
+      action: 'teacher.classes_updated',
+      targetUserId: teacherId,
+      details: { class_count: 0 },
+    });
+    return [];
+  }
+
+  const rows = classIds.map((classId) => ({
+    teacher_id: teacherId,
+    class_id: classId,
+    subject: null,
+  }));
+  const { data, error } = await supabase
+    .from('class_teachers')
+    .insert(rows)
+    .select();
+  if (error) throw new Error(`Could not save assignments: ${error.message}`);
+
+  logAuditEvent({
+    action: 'teacher.classes_updated',
+    targetUserId: teacherId,
+    details: { class_count: classIds.length, class_ids: classIds },
+  });
+  return data;
+}

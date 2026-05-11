@@ -19,6 +19,7 @@ import { PupilImportView } from './PupilImportView';
 import { PupilSingleAddView } from './PupilSingleAddView';
 import { StaffView } from './StaffView';
 import { TiersView } from './TiersView';
+import { CurriculumView } from './CurriculumView';
 
 const NAV = [
   { to: '/app/admin', label: 'Overview', end: true },
@@ -40,7 +41,7 @@ export default function AdminApp() {
       <Route path="staff" element={<StaffShell><StaffView /></StaffShell>} />
       <Route path="tiers" element={<TiersShell><TiersView /></TiersShell>} />
       <Route path="billing" element={<Placeholder title="Billing" />} />
-      <Route path="curriculum" element={<Placeholder title="Curriculum" />} />
+      <Route path="curriculum" element={<CurriculumShell><CurriculumView /></CurriculumShell>} />
       <Route path="alerts" element={<Placeholder title="Alerts" />} />
     </Routes>
   );
@@ -149,6 +150,14 @@ function StaffShell({ children }) {
 function TiersShell({ children }) {
   return (
     <AppShell title="Tiers" navItems={NAV}>
+      {children}
+    </AppShell>
+  );
+}
+
+function CurriculumShell({ children }) {
+  return (
+    <AppShell title="Curriculum" navItems={NAV}>
       {children}
     </AppShell>
   );

@@ -12,6 +12,7 @@
  * single tap, picking a new one is one tap + two selects + tap.
  */
 
+import { friendlyError } from '@/utils/friendlyError';
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -101,7 +102,7 @@ export function ScoresGradebookPicker() {
       {error && (
         <Card className="border-red-400/30 bg-red-400/[0.04]">
           <div className="font-display text-display-3 text-red-400">Could not load classes</div>
-          <p className="mt-s-3 text-body text-ink-2">{error.message}</p>
+          <p className="mt-s-3 text-body text-ink-2">{friendlyError(error)}</p>
         </Card>
       )}
 

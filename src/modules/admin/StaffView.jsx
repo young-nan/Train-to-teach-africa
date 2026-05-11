@@ -24,6 +24,7 @@ import { Chip } from '@/components/ui/Chip';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import * as staffService from '@/services/staffService';
+import * as pupilImportService from '@/services/pupilImportService';
 import { cn } from '@/utils/cn';
 
 const ROLE_LABEL = {
@@ -119,6 +120,16 @@ export function StaffView() {
 
 function StaffRow({ staff }) {
   const initials = (staff.full_name ?? '?').split(/\s+/).slice(0, 2).map((s) => s[0]?.toUpperCase()).join('') || '?';
+  const isTeacher = staff.role === 'teacher';
+
+  // Only load class assignments for teachers — saves a query per non-teacher row.
+  const { data: assignments } = useQuery({
+    queryKey: ['staff', 'classes', staff.user_id],
+    queryFn: () => staffService.getTeacherClasses(staff.user_id),
+    enabled: isTeacher,
+    staleTime: 60_000,
+  });
+
   return (
     <div className="border-b border-line-1 last:border-0 flex items-center gap-s-4 px-s-4 py-s-3 min-h-[64px]">
       <div className="w-[40px] h-[40px] rounded-full bg-gold-400/10 border border-gold-400/25 grid place-items-center font-mono text-[12px] text-gold-200 shrink-0">
@@ -127,6 +138,14 @@ function StaffRow({ staff }) {
       <div className="flex-1 min-w-0">
         <div className="text-[14.5px] text-ink-1 truncate">{staff.full_name ?? '(no name)'}</div>
         <div className="font-mono text-[10px] text-ink-3 truncate">{staff.email}</div>
+        {isTeacher && assignments && assignments.length > 0 && (
+          <div className="text-[11px] text-ink-3 mt-s-1 truncate">
+            Teaches: {assignments.map((a) => a.classes?.name).filter(Boolean).join(', ')}
+          </div>
+        )}
+        {isTeacher && assignments && assignments.length === 0 && (
+          <div className="text-[11px] text-amber-400 mt-s-1">No classes assigned</div>
+        )}
       </div>
       <Chip variant={staff.role === 'head_teacher' ? 'gold' : 'default'}>
         {ROLE_LABEL[staff.role] ?? staff.role}
@@ -143,22 +162,51 @@ function InviteStaffCard({ allowedRoles, schoolId, onDone }) {
     mode: 'invite',
     temporary_password: '',
   });
+  const [selectedClassIds, setSelectedClassIds] = useState([]);
   const [result, setResult] = useState(null);
 
+  // Load classes for assignment when role is teacher
+  const { data: classes } = useQuery({
+    queryKey: ['admin', 'classes', schoolId],
+    queryFn: () => pupilImportService.listClassesForImport(schoolId),
+    enabled: !!schoolId,
+    staleTime: 5 * 60_000,
+  });
+
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const toggleClass = (id) => setSelectedClassIds((arr) =>
+    arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]
+  );
 
   const inviteMutation = useMutation({
-    mutationFn: () => staffService.inviteStaff({
-      mode: form.mode,
-      email: form.email,
-      fullName: form.full_name,
-      role: form.role,
-      schoolId,
-      temporaryPassword: form.mode === 'password' ? form.temporary_password : undefined,
-    }),
+    mutationFn: async () => {
+      const invited = await staffService.inviteStaff({
+        mode: form.mode,
+        email: form.email,
+        fullName: form.full_name,
+        role: form.role,
+        schoolId,
+        temporaryPassword: form.mode === 'password' ? form.temporary_password : undefined,
+      });
+      // If teacher + classes selected, set assignments. Non-fatal if it fails
+      // — the user exists; admin can re-assign from the staff list.
+      if (form.role === 'teacher' && selectedClassIds.length > 0) {
+        try {
+          await staffService.setTeacherClasses({
+            teacherId: invited.user_id,
+            classIds: selectedClassIds,
+          });
+          invited.assigned_class_count = selectedClassIds.length;
+        } catch (e) {
+          invited.assignment_warning = e.message;
+        }
+      }
+      return invited;
+    },
     onSuccess: (data) => {
       setResult(data);
       setForm((f) => ({ ...f, full_name: '', email: '', temporary_password: '' }));
+      setSelectedClassIds([]);
     },
   });
 
@@ -184,6 +232,16 @@ function InviteStaffCard({ allowedRoles, schoolId, onDone }) {
             <div className="text-[11.5px] text-ink-3 mt-s-2">
               Share this verbally or in person. It won't be shown again.
             </div>
+          </div>
+        )}
+        {result.assigned_class_count > 0 && (
+          <div className="text-[12.5px] text-ink-2 mb-s-3">
+            ↳ Assigned to {result.assigned_class_count} {result.assigned_class_count === 1 ? 'class' : 'classes'}.
+          </div>
+        )}
+        {result.assignment_warning && (
+          <div className="text-[12.5px] text-amber-400 mb-s-3">
+            ⚠ Account created but class assignment failed: {result.assignment_warning}. You can re-assign from the staff list.
           </div>
         )}
         <div className="flex gap-s-3">
@@ -232,6 +290,54 @@ function InviteStaffCard({ allowedRoles, schoolId, onDone }) {
             ))}
           </select>
         </Field>
+
+        {/* Class assignments — only for teachers. A teacher can be assigned
+            to any number of classes; tick all that apply. Picking zero
+            classes is allowed (admin will assign later from the staff list). */}
+        {form.role === 'teacher' && (
+          <Field
+            label={`Classes to teach (${selectedClassIds.length} selected)`}
+            hint="Tap to toggle. You can leave blank and assign later."
+          >
+            {(classes ?? []).length === 0 ? (
+              <p className="text-[12.5px] text-ink-3 italic">
+                No classes exist yet. Create classes first, or invite the
+                teacher and assign them later.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-s-2">
+                {(classes ?? []).map((c) => {
+                  const checked = selectedClassIds.includes(c.id);
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => toggleClass(c.id)}
+                      className={cn(
+                        'flex items-center gap-s-3 px-s-3 py-s-2 rounded-r-2 border text-left transition-all duration-150',
+                        checked
+                          ? 'bg-gold-400/[0.08] border-gold-400/40 text-ink-0'
+                          : 'bg-surface-3 border-line-2 text-ink-1 hover:border-line-3',
+                      )}
+                    >
+                      <span className={cn(
+                        'w-[18px] h-[18px] rounded-sm border-2 grid place-items-center shrink-0',
+                        checked ? 'bg-gold-400 border-gold-400' : 'border-line-3',
+                      )}>
+                        {checked && (
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 6l3 3 5-5" stroke="#1a1305" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="text-[13.5px] truncate">{c.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </Field>
+        )}
 
         <Field label="How should they get access? *">
           <div className="flex flex-col gap-s-3 mt-s-1">

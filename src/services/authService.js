@@ -86,24 +86,44 @@ export function onAuthStateChange(callback) {
  * timeout setting, and on mobile we've seen the request hang indefinitely
  * when Cloudflare returns a 5xx that supabase-js doesn't surface as an
  * error — leaving the auth bootstrap stuck.
+ *
+ * Retries once on timeout. A second timeout suggests a real outage,
+ * not a transient blip; we let it throw so the caller can show an error.
  */
-export async function hydrateProfile(userId) {
+export async function hydrateProfile(userId, { attempt = 0 } = {}) {
   const HYDRATE_TIMEOUT_MS = 10_000;
+  const MAX_ATTEMPTS = 2;
 
-  const result = await Promise.race([
-    supabase
-      .from('current_user_profile')
-      .select('*')
-      .eq('user_id', userId)
-      .single(),
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Profile hydration timed out')), HYDRATE_TIMEOUT_MS),
-    ),
-  ]);
+  let timeoutHandle;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutHandle = setTimeout(
+      () => reject(new Error('Profile hydration timed out')),
+      HYDRATE_TIMEOUT_MS,
+    );
+  });
 
-  const { data, error } = result;
-  if (error) throw mapAuthError(error);
-  return data;
+  try {
+    const result = await Promise.race([
+      supabase
+        .from('current_user_profile')
+        .select('*')
+        .eq('user_id', userId)
+        .single(),
+      timeoutPromise,
+    ]);
+    clearTimeout(timeoutHandle);
+    const { data, error } = result;
+    if (error) throw mapAuthError(error);
+    return data;
+  } catch (e) {
+    clearTimeout(timeoutHandle);
+    const isTimeout = e?.message === 'Profile hydration timed out';
+    if (isTimeout && attempt + 1 < MAX_ATTEMPTS) {
+      console.warn('[auth] hydration timed out, retrying once');
+      return hydrateProfile(userId, { attempt: attempt + 1 });
+    }
+    throw e;
+  }
 }
 
 export async function requestPasswordReset(email) {

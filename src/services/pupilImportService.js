@@ -102,6 +102,28 @@ export async function listClassesForImport(schoolId) {
 }
 
 /**
+ * Generate the next sequential pupil code for a school at a given level.
+ * Server-side RPC ensures two admins enrolling simultaneously can't
+ * produce duplicate codes.
+ *   - nursery levels  → SCHOOL-N12   (2-digit number)
+ *   - primary levels  → SCHOOL-P145  (3-digit number)
+ *   - secondary lvls  → SCHOOL-S0042 (4-digit number)
+ */
+export async function nextPupilCode({ schoolId, level }) {
+  const { data, error } = await supabase.rpc('next_pupil_code', {
+    p_school_id: schoolId,
+    p_level: level,
+  });
+  if (error) {
+    if (error.message.includes('school_has_no_abbreviation')) {
+      throw new Error("Your school doesn't have an abbreviation set yet. Ask the super admin to add one before auto-generating codes.");
+    }
+    throw new Error(`Could not generate code: ${error.message}`);
+  }
+  return data;
+}
+
+/**
  * Insert the validated batch. Returns the result counts plus per-row errors.
  *
  * Note: we do NOT use a transaction. If row 28 fails, rows 1-27 stay.

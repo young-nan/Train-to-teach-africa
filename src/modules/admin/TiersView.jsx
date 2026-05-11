@@ -1,3 +1,19 @@
+/**
+ * src/modules/admin/TiersView.jsx
+ *
+ * /app/admin/tiers
+ *
+ * Super-admin only. Lists all subscription tiers (active and inactive),
+ * lets the admin edit price, name, description, active flag, and
+ * Paystack plan code.
+ *
+ * The (curriculum × audience × period) identity is fixed — you can't
+ * change a tier's structural identity, only its display/price details.
+ * Adding new tiers requires a migration (rare event).
+ *
+ * Edits are inline: click a tier row to open an edit form below it.
+ */
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
@@ -11,17 +27,19 @@ const CURRENCY_PREFIX = { NGN: '₦', USD: '$' };
 
 export function TiersView() {
   const { profile } = useAuth();
-  const isAdmin = profile?.role === 'super_admin';
 
-  // Hook moved to top level to satisfy Rule of Hooks
+  // Hooks must run on every render in the same order. Place useQuery
+  // BEFORE the role-gated early return; `enabled` keeps the query inert
+  // for non-super-admins so we don't fire a useless network call.
+  const isSuperAdmin = profile?.role === 'super_admin';
   const { data: tiers, isLoading } = useQuery({
     queryKey: ['admin', 'tiers'],
     queryFn: () => tiersService.listAllTiers(),
+    enabled: isSuperAdmin,
     staleTime: 30_000,
-    enabled: isAdmin,
   });
 
-  if (!isAdmin) {
+  if (!isSuperAdmin) {
     return (
       <Card className="border-amber-400/30 bg-amber-400/[0.04]">
         <div className="font-display text-display-3 text-amber-400">Super admin only</div>
@@ -110,6 +128,7 @@ function TierEditPanel({ tier, onClose }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
     name: tier.name,
+    // We edit price as a "major unit" decimal — admins think in whole naira/dollars
     price_major: (tier.price_minor / 100).toString(),
     description: tier.description ?? '',
     paystack_plan_code: tier.paystack_plan_code ?? '',
@@ -123,6 +142,7 @@ function TierEditPanel({ tier, onClose }) {
       if (Number.isNaN(priceMajor) || priceMajor < 0) {
         throw new Error('Price must be a positive number.');
       }
+      // Convert back to minor units for storage. Round to handle USD cents.
       const priceMinor = Math.round(priceMajor * 100);
       return tiersService.updateTier({
         id: tier.id,
@@ -137,7 +157,7 @@ function TierEditPanel({ tier, onClose }) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'tiers'] });
-      qc.invalidateQueries({ queryKey: ['pricing-tiers'] });
+      qc.invalidateQueries({ queryKey: ['pricing-tiers'] }); // any public-page caches
       onClose();
     },
   });

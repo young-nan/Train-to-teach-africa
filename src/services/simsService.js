@@ -251,23 +251,20 @@ export async function getAttendanceTrend({ schoolId, days = 14 }) {
  * the authenticated user — a teacher never has to pass their own ID.
  * Admins can pass an explicit teacherId to fetch another teacher's load.
  */
-export async function getMyClasses(teacherId) {
-  let query = supabase
-    .from('classes')
-    .select('id, name, level, pupil_count, school_id')
-    .order('name');
-
-  if (teacherId) {
-    query = query.eq('teacher_id', teacherId);
-  } else {
-    // Resolve current user. RLS will additionally enforce school scope,
-    // but the explicit filter helps Postgres pick the right index.
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.id) throw new Error('Not signed in');
-    query = query.eq('teacher_id', user.id);
-  }
-
-  const { data, error } = await query;
+/**
+ * Returns classes the calling user teaches. With the v0009 migration, a
+ * teacher can be assigned to many classes via `class_teachers`. The RPC
+ * unions the legacy `classes.teacher_id` with the new join table so
+ * existing single-teacher classes still appear.
+ *
+ * NOTE: the optional `teacherId` argument is now ignored for safety —
+ * we always resolve from the authenticated user. Allowing arbitrary
+ * teacherId here would let any authenticated user query any teacher's
+ * classes by id, which RLS would block but is surprising at the API
+ * level.
+ */
+export async function getMyClasses() {
+  const { data, error } = await supabase.rpc('my_taught_classes');
   if (error) throw new Error(`Could not load classes: ${error.message}`);
   return data ?? [];
 }

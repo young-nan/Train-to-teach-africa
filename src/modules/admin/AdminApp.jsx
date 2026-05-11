@@ -18,11 +18,13 @@ import * as simsService from '@/services/simsService';
 import { PupilImportView } from './PupilImportView';
 import { PupilSingleAddView } from './PupilSingleAddView';
 import { StaffView } from './StaffView';
+import { TiersView } from './TiersView';
 
 const NAV = [
   { to: '/app/admin', label: 'Overview', end: true },
   { to: '/app/admin/enrollments', label: 'Enrolments' },
   { to: '/app/admin/staff', label: 'Staff' },
+  { to: '/app/admin/tiers', label: 'Tiers' },
   { to: '/app/admin/billing', label: 'Billing' },
   { to: '/app/admin/curriculum', label: 'Curriculum' },
   { to: '/app/admin/alerts', label: 'Alerts' },
@@ -36,6 +38,7 @@ export default function AdminApp() {
       <Route path="pupils/import" element={<EnrollmentsShell><PupilImportView /></EnrollmentsShell>} />
       <Route path="pupils/add" element={<EnrollmentsShell><PupilSingleAddView /></EnrollmentsShell>} />
       <Route path="staff" element={<StaffShell><StaffView /></StaffShell>} />
+      <Route path="tiers" element={<TiersShell><TiersView /></TiersShell>} />
       <Route path="billing" element={<Placeholder title="Billing" />} />
       <Route path="curriculum" element={<Placeholder title="Curriculum" />} />
       <Route path="alerts" element={<Placeholder title="Alerts" />} />
@@ -138,6 +141,14 @@ function EnrollmentsShell({ children }) {
 function StaffShell({ children }) {
   return (
     <AppShell title="Staff" navItems={NAV}>
+      {children}
+    </AppShell>
+  );
+}
+
+function TiersShell({ children }) {
+  return (
+    <AppShell title="Tiers" navItems={NAV}>
       {children}
     </AppShell>
   );

@@ -33,6 +33,25 @@ export async function listLessonsForStudent({ studentId, level, subject, weekOfT
 /**
  * Fetch a single lesson. Validates against LessonSchema before returning.
  */
+/**
+ * Lightweight pupil summary for the parent-side personalisation banner.
+ * RLS on `pupils` restricts a parent to their linked children, so this
+ * call returns null if the parent isn't linked.
+ */
+export async function getChildSummary(pupilId) {
+  if (!pupilId) return null;
+  const { data, error } = await supabase
+    .from('pupils')
+    .select('id, full_name, level, class_id, classes(name)')
+    .eq('id', pupilId)
+    .maybeSingle();
+  if (error) {
+    console.warn('[lesson] getChildSummary:', error.message);
+    return null;
+  }
+  return data;
+}
+
 export async function getLesson(lessonId) {
   const { data, error } = await supabase
     .from('lessons')

@@ -208,7 +208,6 @@ function PriceCard({ plan, audience, featured, cadenceFallback, onSubscribe }) {
 function featuresFor(plan) {
   if (plan.audience === 'parent') {
     return [
-      'Up to 4 children on one subscription',
       'Daily 5-minute home activity',
       'WhatsApp support',
       'Term reports for every child',
@@ -226,7 +225,6 @@ function featuresFor(plan) {
   return [
     'Up to 200 pupils included',
     'Full SIMS — attendance, scores, reports',
-    'Parent portal for every family',
     'Onboarding + teacher CPD included',
   ];
 }

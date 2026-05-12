@@ -68,7 +68,7 @@ function Hero() {
         <p className="mt-s-6 text-body-l text-ink-2 max-w-[60ch]">
           We're building a marketplace that connects qualified Nigerian
           tutors with parents who need them — online and in homes across
-          Lagos, Abuja, Port Harcourt, and beyond. Sign up to be one of the
+          Africa, and beyond. Sign up to be one of the
           first.
         </p>
         <div className="mt-s-7 flex flex-wrap gap-s-3">

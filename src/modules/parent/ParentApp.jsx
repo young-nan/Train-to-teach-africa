@@ -14,27 +14,30 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { getGreeting } from '@/utils/greeting';
 import { ParentReportsView } from './ParentReportsView';
+import { ParentSubscribeView } from './ParentSubscribeView';
+import { LessonReaderView } from './LessonReaderView';
+import { LessonPrintView } from './LessonPrintView';
+import { ChildEnrolmentView } from './ChildEnrolmentView';
 import { ReportCardPrint } from '@/modules/sims/ReportCardPrint';
 
 const NAV = [
   { to: '/app/parent', label: 'Tonight', end: true },
   { to: '/app/parent/children', label: 'Children' },
+  { to: '/app/parent/lessons', label: 'Lessons' },
   { to: '/app/parent/reports', label: 'Reports' },
-  { to: '/app/parent/billing', label: 'Billing' },
+  { to: '/app/parent/subscribe', label: 'Subscribe' },
 ];
 
 export default function ParentApp() {
   return (
     <Routes>
       <Route index element={<TonightView />} />
-      <Route path="children" element={<Placeholder title="Children" />} />
+      <Route path="children" element={<ChildrenShell><ChildEnrolmentView /></ChildrenShell>} />
+      <Route path="lessons/:lessonId/print" element={<LessonPrintView />} />
+      <Route path="lessons/:lessonId" element={<LessonShell><LessonReaderView /></LessonShell>} />
       <Route path="reports" element={<ReportsShell><ParentReportsView /></ReportsShell>} />
-      {/* Parent's print-preview route. Reuses the same ReportCardPrint component
-          the teacher uses — RLS on term_reports limits the parent to only
-          their own children's PUBLISHED reports, so security is enforced
-          at the data layer regardless of which UI route lands here. */}
       <Route path="reports/:pupilId/:term/:year/print" element={<ReportCardPrint />} />
-      <Route path="billing" element={<Placeholder title="Billing" />} />
+      <Route path="subscribe" element={<SubscribeShell><ParentSubscribeView /></SubscribeShell>} />
     </Routes>
   );
 }
@@ -124,6 +127,30 @@ function Placeholder({ title }) {
 function ReportsShell({ children }) {
   return (
     <AppShell title="Reports" navItems={NAV}>
+      {children}
+    </AppShell>
+  );
+}
+
+function SubscribeShell({ children }) {
+  return (
+    <AppShell title="Subscribe" navItems={NAV}>
+      {children}
+    </AppShell>
+  );
+}
+
+function LessonShell({ children }) {
+  return (
+    <AppShell title="Lesson" navItems={NAV}>
+      {children}
+    </AppShell>
+  );
+}
+
+function ChildrenShell({ children }) {
+  return (
+    <AppShell title="Children" navItems={NAV}>
       {children}
     </AppShell>
   );

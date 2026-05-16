@@ -60,8 +60,8 @@ export async function requestConnection({ schoolId, claimedChildName, claimedCla
 
   if (existing) {
     const statusMessages = {
-      pending:  'You already have a pending connection request to this school. They'll review it shortly.',
-      approved: 'You're already connected to this school.',
+      pending:  'You already have a pending connection request to this school. They\'ll review it shortly.',
+      approved: 'You\'re already connected to this school.',
       rejected: 'Your previous connection request to this school was declined. Contact the school directly.',
       revoked:  'Your connection to this school was revoked. Contact the school directly.',
     };
@@ -211,7 +211,7 @@ export async function listSchoolConnections({ status } = {}) {
  *     share_score_summary: boolean,
  *   }
  * }} params
- */
+ * */
 export async function approveConnection({ connectionId, pupilId, shareConfig }) {
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -223,9 +223,9 @@ export async function approveConnection({ connectionId, pupilId, shareConfig }) 
       pupil_id:            pupilId,
       reviewed_at:         new Date().toISOString(),
       reviewed_by:         user.id,
-      share_attendance:    shareConfig.share_attendance    ?? false,
-      share_term_reports:  shareConfig.share_term_reports  ?? false,
-      share_score_summary: shareConfig.share_score_summary ?? false,
+      share_attendance:    shareConfig?.share_attendance    ?? false,
+      share_term_reports:  shareConfig?.share_term_reports  ?? false,
+      share_score_summary: shareConfig?.share_score_summary ?? false,
       updated_at:          new Date().toISOString(),
     })
     .eq('id', connectionId)
@@ -322,9 +322,9 @@ export async function updateShareSettings({ connectionId, shareConfig }) {
   const { data, error } = await supabase
     .from('parent_school_connections')
     .update({
-      share_attendance:    shareConfig.share_attendance    ?? false,
-      share_term_reports:  shareConfig.share_term_reports  ?? false,
-      share_score_summary: shareConfig.share_score_summary ?? false,
+      share_attendance:    shareConfig?.share_attendance    ?? false,
+      share_term_reports:  shareConfig?.share_term_reports  ?? false,
+      share_score_summary: shareConfig?.share_score_summary ?? false,
       updated_at:          new Date().toISOString(),
     })
     .eq('id', connectionId)

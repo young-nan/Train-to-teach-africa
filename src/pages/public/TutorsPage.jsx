@@ -1,14 +1,15 @@
 /**
  * src/pages/public/TutorsPage.jsx
  *
- * Public marketing page for the tutor network. Two purposes:
+ * Public marketing page for the TTA Tutor Network. Mirrors the official
+ * "Trusted tutors for African families" copy block. Two purposes:
  *
  *   1. SUPPLY-SIDE: Tell prospective tutors what TTA's tutor marketplace
  *      will offer (when launched), and capture their interest as a lead.
  *
  *   2. DEMAND-SIDE SIGNAL: Parents who land here see "tutoring is coming"
- *      messaging — primes them for a future product, gets us a feel for
- *      organic interest.
+ *      messaging — primes them for a future product and lets us see organic
+ *      interest before the marketplace ships.
  *
  * NO actual marketplace functionality lives here. Search / booking / payment
  * is v2. The form writes to `tutor_leads`. We email new leads when the
@@ -61,19 +62,23 @@ function Hero() {
         aria-hidden="true"
       />
       <div className="relative max-w-[1280px] mx-auto px-s-6 lg:px-s-9 py-s-10">
-        <Chip variant="gold" dot>For tutors · Coming soon</Chip>
-        <h1 className="mt-s-5 font-display text-display-1 text-ink-0 max-w-[18ch]">
-          Teach. Earn. <span className="ital-gold">On your terms.</span>
+        <Chip variant="gold" dot>TTA Tutor Network · Coming soon</Chip>
+        <h1 className="mt-s-5 font-display text-display-1 text-ink-0 max-w-[20ch]">
+          Trusted tutors for <span className="ital-gold">African families.</span>
         </h1>
-        <p className="mt-s-6 text-body-l text-ink-2 max-w-[60ch]">
-          We're building a marketplace that connects qualified Nigerian
-          tutors with parents who need them — online and in homes across
-          Africa, and beyond. Sign up to be one of the
-          first.
+        <p className="mt-s-6 text-body-l text-ink-2 max-w-[64ch]">
+          Parents can request online or in-person tutors directly through Train
+          To Teach Africa. Teachers and tutors build verified profiles, set
+          their rates, and connect with families. We manage trust, payment
+          handling, and platform verification.
+        </p>
+        <p className="mt-s-4 text-body text-ink-3 max-w-[64ch]">
+          Sign up to be one of the first tutors on the network when we open
+          onboarding.
         </p>
         <div className="mt-s-7 flex flex-wrap gap-s-3">
           <a href="#join">
-            <Button intent="primary" size="lg">Join the network</Button>
+            <Button intent="primary" size="lg">Join as a Tutor</Button>
           </a>
           <Link to="/about">
             <Button intent="ghost" size="lg">About TTA →</Button>
@@ -103,6 +108,9 @@ function WhyTeach() {
       body: 'Tutor by Zoom from anywhere, or in homes within your city. Most tutors do both. Offline gigs need a guarantor.',
     },
   ];
+  const profileFields  = ['Qualifications', 'Teaching experience', 'Curriculum expertise', 'Availability', 'Subject specialisation', 'Location preferences', 'Guarantor verification (offline)'];
+  const parentFilters  = ['Subject', 'Curriculum', 'Location', 'Price range', 'Teaching format', 'Experience level'];
+
   return (
     <section className="py-s-10 border-b border-line-1">
       <div className="max-w-[1280px] mx-auto px-s-6 lg:px-s-9">
@@ -116,6 +124,33 @@ function WhyTeach() {
               <p className="mt-s-3 text-body text-ink-2">{r.body}</p>
             </Card>
           ))}
+        </div>
+
+        <div className="mt-s-9 grid md:grid-cols-2 gap-s-5">
+          <Card>
+            <div className="font-mono text-eyebrow uppercase text-gold-400">Your profile</div>
+            <h3 className="mt-s-3 font-display text-display-3 text-ink-0">What tutors share.</h3>
+            <ul className="mt-s-5 grid grid-cols-1 sm:grid-cols-2 gap-s-2 text-[13.5px] text-ink-2">
+              {profileFields.map((f) => (
+                <li key={f} className="flex items-start gap-s-2">
+                  <span aria-hidden="true" className="text-gold-400 mt-[2px]">·</span>
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+          <Card>
+            <div className="font-mono text-eyebrow uppercase text-gold-400">Parent search</div>
+            <h3 className="mt-s-3 font-display text-display-3 text-ink-0">How parents find you.</h3>
+            <ul className="mt-s-5 grid grid-cols-1 sm:grid-cols-2 gap-s-2 text-[13.5px] text-ink-2">
+              {parentFilters.map((f) => (
+                <li key={f} className="flex items-start gap-s-2">
+                  <span aria-hidden="true" className="text-gold-400 mt-[2px]">·</span>
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
         </div>
       </div>
     </section>

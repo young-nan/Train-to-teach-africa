@@ -13,7 +13,6 @@ import { Chip } from '@/components/ui/Chip';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { getGreeting } from '@/utils/greeting';
-import { TonightView }    from './TonightView';
 import { ParentReportsView } from './ParentReportsView';
 import { ProgressView }   from './ProgressView';
 import { ParentSubscribeView } from './ParentSubscribeView';

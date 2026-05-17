@@ -20,6 +20,9 @@ import { CurriculumView }     from './CurriculumView';
 import { TermLocksView }      from './TermLocksView';
 import { ImpactDashboardView } from './ImpactDashboardView';
 import { ConnectionsView } from './ConnectionsView';
+import { BillingDashboardView } from '@/modules/billing/BillingDashboardView';
+import { InvoiceEditorView }    from '@/modules/billing/InvoiceEditorView';
+import { BulkInvoiceView }      from '@/modules/billing/BulkInvoiceView';
 
 const BASE_NAV = [
   { to: '/app/admin',             label: 'Overview',   end: true },
@@ -54,7 +57,14 @@ export default function AdminApp() {
       <Route path="terms"         element={wrap('Terms', <TermLocksView />)} />
       <Route path="alerts"        element={<AlertsView />} />
       <Route path="impact"        element={<ImpactDashboardView />} />
-      {role === 'school_admin' && <Route path="billing" element={<BillingView />} />}
+      {role === 'school_admin' && (
+        <>
+          <Route path="billing"                    element={<BillingDashboardView />} />
+          <Route path="billing/invoice/:invoiceId" element={<InvoiceEditorView />} />
+          <Route path="billing/invoice/new"        element={<InvoiceEditorView />} />
+          <Route path="billing/bulk"               element={<BulkInvoiceView />} />
+        </>
+      )}
     </Routes>
   );
 }
@@ -208,80 +218,6 @@ function AlertsView() {
   );
 }
 
-// ── Billing view ──────────────────────────────────────────────────────────────
-function BillingView() {
-  const { schoolId, role } = useAuth();
-  const nav = buildNav(role);
-  const { data: billing, isLoading } = useQuery({ queryKey: ['admin','billing',schoolId], queryFn: () => fetchBilling(schoolId), enabled: !!schoolId, staleTime: 300_000 });
-
-  const sub = billing?.active_subscription;
-  const payments = billing?.recent_payments ?? [];
-
-  return (
-    <AppShell title="Billing" navItems={nav}>
-      <div className="max-w-[820px]">
-        <div className="mb-s-7">
-          <div className="font-mono text-eyebrow uppercase text-gold-400">Billing</div>
-          <h2 className="mt-s-3 font-display text-display-2 text-ink-0">Subscription and payments.</h2>
-        </div>
-        {isLoading && <Skeleton />}
-        {!isLoading && (
-          <div className="space-y-s-6">
-            <Card className={`border-2 ${sub?.status==='active'?'border-green-400/25 bg-green-400/[0.02]':'border-amber-400/25 bg-amber-400/[0.02]'}`}>
-              <div className="font-mono text-eyebrow uppercase text-gold-400 mb-s-4">School subscription</div>
-              {sub
-                ? <div className="grid sm:grid-cols-3 gap-s-5">
-                    <div><div className="font-mono text-meta text-ink-3 mb-s-1">Plan</div><div className="text-body text-ink-0">{fmtPlan(sub.plan_code)}</div></div>
-                    <div><div className="font-mono text-meta text-ink-3 mb-s-1">Status</div><Chip variant={sub.status==='active'?'green':'amber'} dot>{sub.status}</Chip></div>
-                    <div>
-                      <div className="font-mono text-meta text-ink-3 mb-s-1">Expires</div>
-                      <div className="text-body text-ink-0">{new Date(sub.ends_at).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'})}</div>
-                      <div className="font-mono text-meta text-ink-3 mt-s-1">{sub.days_left} days remaining</div>
-                    </div>
-                  </div>
-                : <p className="text-body text-ink-2">No active school subscription. Contact TTA to subscribe.</p>
-              }
-            </Card>
-
-            <Card className="bg-surface-2 border-line-2">
-              <div className="font-mono text-eyebrow uppercase text-gold-400 mb-s-3">Parent subscriptions</div>
-              <div className="flex items-center gap-s-4">
-                <div className="font-display text-display-2 text-ink-0">{billing?.parent_sub_count ?? 0}</div>
-                <div className="text-body text-ink-2">active parent subscriptions linked to your school's pupils</div>
-              </div>
-            </Card>
-
-            <Card className="bg-surface-2 border-line-2">
-              <div className="font-mono text-eyebrow uppercase text-gold-400 mb-s-5">Recent payments</div>
-              {payments.length === 0
-                ? <p className="text-body text-ink-2">No payment records found.</p>
-                : <div className="space-y-s-1">
-                    {payments.map(py => {
-                      const prefix = py.currency==='NGN'?'₦':'$';
-                      const amt = Math.round(py.amount_minor/100).toLocaleString('en-NG');
-                      const date = new Date(py.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});
-                      const color = py.status==='verified'?'green':py.status==='failed'?'red':'amber';
-                      return (
-                        <div key={py.reference} className="flex items-center gap-s-4 py-s-3 border-b border-line-2 last:border-0">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[13.5px] text-ink-1 truncate">{fmtPlan(py.plan_code)}</div>
-                            <div className="font-mono text-meta text-ink-3">{date} · {py.reference?.slice(-8)}</div>
-                          </div>
-                          <div className="font-mono text-[14px] text-ink-0 tabular-nums shrink-0">{prefix}{amt}</div>
-                          <Chip variant={color} dot>{py.status}</Chip>
-                        </div>
-                      );
-                    })}
-                  </div>
-              }
-            </Card>
-          </div>
-        )}
-      </div>
-    </AppShell>
-  );
-}
-
 // ── Enrolments ────────────────────────────────────────────────────────────────
 function EnrollmentsView() {
   return (
@@ -317,11 +253,6 @@ async function fetchAtRisk(schoolId) {
   const { data, error } = await supabase.rpc('get_at_risk_pupils', { p_school_id: schoolId, p_days: 14, p_min_absences: 3 });
   if (error) { console.warn('[at-risk]', error.message); return []; }
   return data ?? [];
-}
-async function fetchBilling(schoolId) {
-  const { data, error } = await supabase.rpc('get_school_billing_summary', { p_school_id: schoolId });
-  if (error) throw new Error(`Could not load billing: ${error.message}`);
-  return data;
 }
 
 function Skeleton() {

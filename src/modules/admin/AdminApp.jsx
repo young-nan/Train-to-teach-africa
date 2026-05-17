@@ -19,7 +19,7 @@ import { TiersView }          from './TiersView';
 import { CurriculumView }     from './CurriculumView';
 import { TermLocksView }      from './TermLocksView';
 import { ImpactDashboardView } from './ImpactDashboardView';
-import { ConnectionsView }    from './ConnectionsView';
+import { ConnectionsView } from './ConnectionsView';
 
 const BASE_NAV = [
   { to: '/app/admin',             label: 'Overview',   end: true },
@@ -28,8 +28,8 @@ const BASE_NAV = [
   { to: '/app/admin/connections', label: 'Connections' },
   { to: '/app/admin/curriculum',  label: 'Curriculum' },
   { to: '/app/admin/terms',       label: 'Terms'      },
-  { to: '/app/admin/alerts',      label: 'Alerts'      },
-  { to: '/app/admin/impact',      label: 'Impact'      },
+  { to: '/app/admin/alerts',      label: 'Alerts'     },
+  { to: '/app/admin/impact',      label: 'Impact'     },
 ];
 
 function buildNav(role) {
@@ -49,7 +49,7 @@ export default function AdminApp() {
       <Route path="pupils/import" element={wrap('Import pupils', <PupilImportView />)} />
       <Route path="pupils/add"    element={wrap('Add pupil', <PupilSingleAddView />)} />
       <Route path="staff"         element={wrap('Staff', <StaffView />)} />
-      <Route path="connections"   element={wrap('Connections', <ConnectionsView />)} />
+      <Route path="connections" element={wrap('Connections', <ConnectionsView />)} />
       <Route path="curriculum"    element={wrap('Curriculum', <CurriculumView />)} />
       <Route path="terms"         element={wrap('Terms', <TermLocksView />)} />
       <Route path="alerts"        element={<AlertsView />} />
@@ -77,10 +77,10 @@ function OverviewView() {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-s-4 mb-s-8">
-          <KpiCard label="Pupils"         value={(kpis?.pupil_count ?? 0).toLocaleString()}                                                                                       trend="enrolled"                                                                        trendIntent="neutral" />
-          <KpiCard label="Classes"        value={kpis?.class_count ?? 0}                                                                                                               trend="active"                                                                          trendIntent="neutral" />
-          <KpiCard label="Attendance 14d" value={kpis?.attendance_14d_pct != null ? `${kpis.attendance_14d_pct}%` : '—'}                                                              trend={kpis?.attendance_14d_pct >= 90 ? '↑ Good' : kpis?.attendance_14d_pct >= 75 ? '↓ Below target' : '↓ Needs action'} trendIntent={kpis?.attendance_14d_pct >= 90 ? 'green' : kpis?.attendance_14d_pct >= 75 ? 'amber' : 'red'} />
-          <KpiCard label="Open alerts"    value={(alerts?.length ?? 0).toString()}                                                                                                     trend={alerts?.length > 0 ? 'needs attention' : 'all clear'}                             trendIntent={alerts?.length > 0 ? 'amber' : 'green'} />
+          <KpiCard label="Pupils"         value={(kpis?.pupil_count ?? 0).toLocaleString()}                                                            trend="enrolled"                                                         trendIntent="neutral" />
+          <KpiCard label="Classes"        value={kpis?.class_count ?? 0}                                                                               trend="active"                                                           trendIntent="neutral" />
+          <KpiCard label="Attendance 14d" value={kpis?.attendance_14d_pct != null ? `${kpis.attendance_14d_pct}%` : '—'}                              trend={kpis?.attendance_14d_pct >= 90 ? '↑ Good' : kpis?.attendance_14d_pct >= 75 ? '↓ Below target' : '↓ Needs action'} trendIntent={kpis?.attendance_14d_pct >= 90 ? 'green' : kpis?.attendance_14d_pct >= 75 ? 'amber' : 'red'} />
+          <KpiCard label="Open alerts"    value={(alerts?.length ?? 0).toString()}                                                                     trend={alerts?.length > 0 ? 'needs attention' : 'all clear'}             trendIntent={alerts?.length > 0 ? 'amber' : 'green'} />
         </div>
 
         <div className="grid lg:grid-cols-2 gap-s-6">
@@ -332,4 +332,3 @@ function fmtPlan(code) {
   if (!code) return '—';
   return code.replace('AFR_','African · ').replace('INT_','International · ').replace('_ANNUAL',' · Annual').replace('_TERM',' · Term').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 }
-```</Routes>

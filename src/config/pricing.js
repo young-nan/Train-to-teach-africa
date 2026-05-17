@@ -40,7 +40,7 @@ export const PLANS = Object.freeze({
     audience: 'parent',
     cadence: 'term',
     currency: 'NGN',
-    amountMinor: 1084700, // ₦10,847.00
+    amountMinor: 1224000, // ₦12,240.00
     label: 'Parent · Per Term',
   },
   AFR_PARENT_ANNUAL: {
@@ -49,7 +49,7 @@ export const PLANS = Object.freeze({
     audience: 'parent',
     cadence: 'annual',
     currency: 'NGN',
-    amountMinor: 3118400, // ₦31,184.00
+    amountMinor: 3572000, // ₦35,720.00
     label: 'Parent · Annual',
     saveHint: 'Save vs 3× term',
   },
@@ -59,7 +59,7 @@ export const PLANS = Object.freeze({
     audience: 'teacher',
     cadence: 'term',
     currency: 'NGN',
-    amountMinor: 1220300, // ₦12,203.00
+    amountMinor: 1468800, // ₦14,688.00
     label: 'Teacher · Per Term',
   },
   AFR_SCHOOL_TERM: {
@@ -68,7 +68,7 @@ export const PLANS = Object.freeze({
     audience: 'school',
     cadence: 'term',
     currency: 'NGN',
-    amountMinor: 6101200, // ₦61,012.00
+    amountMinor: 7865700, // ₦78,657.00
     label: 'School Bundle · Per Term',
   },
   AFR_SCHOOL_ANNUAL: {
@@ -77,7 +77,7 @@ export const PLANS = Object.freeze({
     audience: 'school',
     cadence: 'annual',
     currency: 'NGN',
-    amountMinor: 17625600, // ₦176,256.00
+    amountMinor: 23297100, // ₦232,971.00
     label: 'School Bundle · Annual',
     saveHint: 'Save vs 3× term',
   },
@@ -89,7 +89,7 @@ export const PLANS = Object.freeze({
     audience: 'parent',
     cadence: 'term',
     currency: 'USD',
-    amountMinor: 1200, // $12.00
+    amountMinor: 1878, // $18.78
     label: 'Parent · Per Term',
   },
   INT_PARENT_ANNUAL: {
@@ -98,7 +98,7 @@ export const PLANS = Object.freeze({
     audience: 'parent',
     cadence: 'annual',
     currency: 'USD',
-    amountMinor: 3200, // $32.00
+    amountMinor: 5534, // $55.34
     label: 'Parent · Annual',
     saveHint: 'Save vs 3× term',
   },
@@ -108,7 +108,7 @@ export const PLANS = Object.freeze({
     audience: 'teacher',
     cadence: 'term',
     currency: 'USD',
-    amountMinor: 1400, // $14.00
+    amountMinor: 2178, // $21.78
     label: 'Teacher · Per Term',
   },
   INT_SCHOOL_TERM: {
@@ -117,7 +117,7 @@ export const PLANS = Object.freeze({
     audience: 'school',
     cadence: 'term',
     currency: 'USD',
-    amountMinor: 7500, // $75.00
+    amountMinor: 12932, // $129.32
     label: 'School Bundle · Per Term',
   },
   INT_SCHOOL_ANNUAL: {
@@ -126,7 +126,7 @@ export const PLANS = Object.freeze({
     audience: 'school',
     cadence: 'annual',
     currency: 'USD',
-    amountMinor: 25000, // $250.00
+    amountMinor: 35096, // $350.96
     label: 'School Bundle · Annual',
     saveHint: 'Save vs 3× term',
   },
@@ -146,7 +146,7 @@ export const FX = Object.freeze({
  * plan's denominated currency.
  *
  * @param {keyof typeof PLANS | object} planOrCode
- * @returns {string} e.g. "₦10,847" or "$12"
+ * @returns {string} e.g. "₦12,240" or "$18.78"
  */
 export function formatPrice(planOrCode) {
   const plan = typeof planOrCode === 'string' ? PLANS[planOrCode] : planOrCode;
@@ -155,7 +155,7 @@ export function formatPrice(planOrCode) {
   if (plan.currency === 'NGN') {
     return `₦${major.toLocaleString('en-NG', { maximumFractionDigits: 0 })}`;
   }
-  // USD — drop trailing .00 for whole-dollar prices
+  // USD — drop trailing .00 for whole-dollar prices; show 2 dp otherwise.
   const formatted = major.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   return `$${formatted}`;
 }

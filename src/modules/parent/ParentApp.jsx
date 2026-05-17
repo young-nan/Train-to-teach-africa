@@ -13,7 +13,9 @@ import { Chip } from '@/components/ui/Chip';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { getGreeting } from '@/utils/greeting';
+import { TonightView }    from './TonightView';
 import { ParentReportsView } from './ParentReportsView';
+import { ProgressView }   from './ProgressView';
 import { ParentSubscribeView } from './ParentSubscribeView';
 import { LessonReaderView } from './LessonReaderView';
 import { LessonPrintView } from './LessonPrintView';
@@ -24,6 +26,7 @@ const NAV = [
   { to: '/app/parent', label: 'Tonight', end: true },
   { to: '/app/parent/children', label: 'Children' },
   { to: '/app/parent/lessons', label: 'Lessons' },
+  { to: '/app/parent/progress', label: 'Progress' },
   { to: '/app/parent/reports', label: 'Reports' },
   { to: '/app/parent/subscribe', label: 'Subscribe' },
 ];
@@ -32,6 +35,7 @@ export default function ParentApp() {
   return (
     <Routes>
       <Route index element={<TonightView />} />
+      <Route path="progress" element={<ProgressView />} />
       <Route path="children" element={<ChildrenShell><ChildEnrolmentView /></ChildrenShell>} />
       <Route path="lessons/:lessonId/print" element={<LessonPrintView />} />
       <Route path="lessons/:lessonId" element={<LessonShell><LessonReaderView /></LessonShell>} />

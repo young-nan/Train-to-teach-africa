@@ -1,14 +1,22 @@
 /**
  * src/pages/public/HomePage.jsx
  *
- * The marketing homepage. Implements the brief's required sections:
- *   - Hero (with animated platform preview)
- *   - Product ecosystem (4 cards)
- *   - Why Africa-first (4 reasons)
- *   - Impact metrics (live from Supabase via useImpactMetrics)
- *   - Pricing teaser → /pricing
+ * The marketing homepage. Implements the official approved copy:
  *
- * Design language: dark navy + gold per the approved system.
+ *   01 Hero — "Africa's Education Operating System"
+ *   02 What We Do — three connected systems (Learn / SIMS / Tutor Network)
+ *   03 Why We Built This — Africa-first realities
+ *   04 Offline-First Technology
+ *   05 Parent Support
+ *   06 Impact & Accountability — live metrics from Supabase
+ *   07 Who We Serve — five audience cards
+ *   08 Pricing teaser → /pricing
+ *   09 Our Vision
+ *   10 Final CTA
+ *
+ * Design language: deep navy + amber gold per the approved system.
+ * Voice/tone: clear, calm, infrastructure-grade. Italic gold accent appears
+ * once per display heading — the editorial flourish from the design system.
  */
 
 import { Link } from 'react-router-dom';
@@ -24,10 +32,14 @@ export default function HomePage() {
       <PublicNav />
       <main className="pt-[64px]">
         <Hero />
-        <ProductEcosystem />
-        <WhyAfricaFirst />
+        <WhatWeDo />
+        <WhyWeBuiltThis />
+        <OfflineFirst />
+        <ParentSupport />
         <ImpactMetrics />
+        <WhoWeServe />
         <PricingTeaser />
+        <OurVision />
         <FinalCta />
       </main>
       <PublicFooter />
@@ -36,7 +48,7 @@ export default function HomePage() {
 }
 
 // ---------------------------------------------------------------------------
-// Hero
+// 01 Hero
 // ---------------------------------------------------------------------------
 
 function Hero() {
@@ -56,26 +68,34 @@ function Hero() {
           <div>
             <Chip variant="gold" dot className="mb-s-6">Built for African classrooms</Chip>
             <h1 className="font-display text-display-1 text-ink-0">
-              The operating system for{' '}
-              <span className="ital-gold">African education.</span>
+              Africa's Education{' '}
+              <span className="ital-gold">Operating System.</span>
             </h1>
             <p className="mt-s-6 text-body-l text-ink-2 max-w-[58ch]">
-              Train To Teach Africa delivers curriculum-aligned digital learning
-              and school management infrastructure built specifically for African
-              classrooms.
+              Curriculum-aligned learning, school management, parent engagement, and
+              tutor support — built for African schools, families, and educators.
+            </p>
+            <p className="mt-s-4 text-body text-ink-3 max-w-[58ch]">
+              Train To Teach Africa helps schools manage operations, helps teachers
+              teach better, helps parents support learning at home, and helps
+              students access structured, high-quality education designed around
+              African realities. Built by Nigerian educators for African classrooms.
             </p>
             <div className="mt-s-8 flex flex-wrap gap-s-4">
               <Link to="/sign-up">
-                <Button intent="primary" size="lg">Start learning</Button>
+                <Button intent="primary" size="lg">Start Learning</Button>
               </Link>
               <Link to="/solutions/schools">
-                <Button intent="ghost" size="lg">Book school demo →</Button>
+                <Button intent="ghost" size="lg">Book a Demo →</Button>
+              </Link>
+              <Link to="/about#contact">
+                <Button intent="text" size="lg">Partner With Us</Button>
               </Link>
             </div>
             <div className="mt-s-7 flex flex-wrap gap-s-6 font-mono text-meta tracking-[0.04em] text-ink-3">
-              <span>NERDC + NAPPS 2025 aligned</span>
+              <span>NERDC + NAPPS aligned</span>
               <span aria-hidden="true">·</span>
-              <span>Offline-first</span>
+              <span>Offline-capable</span>
               <span aria-hidden="true">·</span>
               <span>Mobile-first</span>
             </div>
@@ -169,50 +189,97 @@ function MiniChart() {
 }
 
 // ---------------------------------------------------------------------------
-// Product Ecosystem
+// 02 What We Do — three connected systems
 // ---------------------------------------------------------------------------
 
 const PRODUCTS = [
   {
     eyebrow: 'TTA Learn',
-    title: 'A learning platform parents and pupils trust.',
-    body: 'Curriculum-aligned digital lessons across Nursery and Primary, with home-support guidance for parents and full instructional support for teachers.',
-    chips: ['NERDC aligned', 'Offline-first', 'Role-adaptive'],
+    title: 'Curriculum-aligned digital learning.',
+    body:
+      'Interactive lessons aligned with the NERDC and NAPPS curriculum. ' +
+      'Students access engaging literacy, numeracy, science, and foundational ' +
+      'learning experiences. Teachers receive instructional guidance and ' +
+      'structured teaching support. Parents receive simplified lesson guidance, ' +
+      'downloadable PDFs, and home-learning support activities.',
+    features: [
+      'Role-based learning experiences',
+      'Interactive lessons + downloadable PDFs',
+      'Parent-friendly learning guides',
+      'Student PIN login',
+      'Teacher instructional notes',
+      'Offline lesson access',
+    ],
   },
   {
     eyebrow: 'TTA SIMS',
-    title: 'School operations, finally on one screen.',
-    body: 'Attendance, grading, term reports, parent comms, and billing — built for schools that don\'t have an IT department.',
-    chips: ['Attendance', 'Gradebook', 'Auto-reports'],
+    title: 'School management for schools without IT departments.',
+    body:
+      'Attendance, grading, report cards, parent communication, billing, and ' +
+      'impact tracking — all in one system. Built around how schools actually ' +
+      'operate. Simple enough for teachers. Powerful enough for school leaders.',
+    features: [
+      'Attendance + academic grading',
+      'Report card generation',
+      'Behaviour + intervention tracking',
+      'School billing management',
+      'Multi-school support',
+      'Audit trails for accountability',
+    ],
   },
   {
-    eyebrow: 'Teacher Development',
-    title: 'CPD that actually fits the day.',
-    body: 'Short, in-context professional development tied to the same curriculum the teacher is teaching this week. Not a 3-hour Saturday workshop.',
-    chips: ['Bite-size', 'Curriculum-tied', 'On device'],
-  },
-  {
-    eyebrow: 'Parent Learning Support',
-    title: 'Help parents help children.',
-    body: 'A nightly 5-minute kitchen activity and three dinner questions, delivered to WhatsApp. Built for parents who want to engage and don\'t know how.',
-    chips: ['WhatsApp', 'No app needed', '5-minute'],
+    eyebrow: 'TTA Tutor Network',
+    title: 'Trusted tutors for African families.',
+    body:
+      'Parents can request online or in-person tutors directly through Train ' +
+      'To Teach Africa. Teachers and tutors build verified profiles, set their ' +
+      'rates, and connect with families. Train To Teach Africa manages trust, ' +
+      'payment handling, and platform verification.',
+    features: [
+      'Verified tutor profiles',
+      'Search by subject, curriculum, location',
+      'Online + in-person formats',
+      'Guarantor verification for offline tutoring',
+      'Paystack-handled payments',
+      'Curriculum-aware matching',
+    ],
   },
 ];
 
-function ProductEcosystem() {
+function WhatWeDo() {
   return (
     <section className="py-s-10 border-t border-line-1">
       <div className="max-w-[1280px] mx-auto px-s-6 lg:px-s-9">
-        <SectionHead num="01" eyebrow="The platform" title={<>One system. <span className="ital-gold">Four products.</span></>} />
-        <div className="mt-s-9 grid lg:grid-cols-2 gap-s-5">
+        <SectionHead
+          num="01"
+          eyebrow="What we do"
+          title={<>One platform. <span className="ital-gold">Three connected systems.</span></>}
+        />
+        <p className="mt-s-5 text-body-l text-ink-2 max-w-[68ch]">
+          Train To Teach Africa combines learning delivery, school operations, and
+          tutor access into a single connected ecosystem. We are not building
+          another generic EdTech platform adapted for Africa. We are building
+          education infrastructure designed from the ground up for African schools
+          and families.
+        </p>
+
+        <div className="mt-s-9 grid lg:grid-cols-3 gap-s-5">
           {PRODUCTS.map((p) => (
-            <article key={p.eyebrow} className="bg-surface-2 border border-line-1 rounded-r-3 p-s-7 hover:border-gold-400/40 transition-colors duration-150">
+            <article
+              key={p.eyebrow}
+              className="bg-surface-2 border border-line-1 rounded-r-3 p-s-7 hover:border-gold-400/40 transition-colors duration-150 flex flex-col"
+            >
               <div className="font-mono text-eyebrow uppercase text-gold-400">{p.eyebrow}</div>
               <h3 className="mt-s-3 font-display text-display-3 text-ink-0">{p.title}</h3>
-              <p className="mt-s-3 text-body text-ink-2 max-w-[52ch]">{p.body}</p>
-              <div className="mt-s-5 flex flex-wrap gap-s-2">
-                {p.chips.map((c) => <Chip key={c} variant="default">{c}</Chip>)}
-              </div>
+              <p className="mt-s-3 text-body text-ink-2">{p.body}</p>
+              <ul className="mt-s-5 flex flex-col gap-s-2 text-[13.5px] text-ink-2 border-t border-line-1 pt-s-5">
+                {p.features.map((f) => (
+                  <li key={f} className="flex items-start gap-s-2">
+                    <span aria-hidden="true" className="text-gold-400 mt-[2px]">·</span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
             </article>
           ))}
         </div>
@@ -222,29 +289,155 @@ function ProductEcosystem() {
 }
 
 // ---------------------------------------------------------------------------
-// Why Africa-first
+// 03 Why We Built This
 // ---------------------------------------------------------------------------
 
-const REASONS = [
-  { eyebrow: 'Reality 01', title: 'Connectivity is unstable.', body: 'Every action saves locally first, syncs in the background. Teachers never lose a register because the network blinked.' },
-  { eyebrow: 'Reality 02', title: 'Devices are low-end Android.', body: 'Built and tested on a Tecno Spark with throttled 3G. First contentful paint ≤ 1.8s. Initial JS payload ≤ 180 KB.' },
-  { eyebrow: 'Reality 03', title: 'Curriculum is local.', body: 'Lessons aligned to the NERDC and NAPPS 2025 curriculum, not a foreign one bolted on. Built by Nigerian educators.' },
-  { eyebrow: 'Reality 04', title: 'Schools need audit trails.', body: 'Every write — every register, every score, every payment — flows through a single audit log. Proprietors can answer parents in fifteen seconds.' },
+const REALITIES = [
+  { title: 'Inconsistent internet connectivity.', body: 'Most platforms used in Africa were designed assuming the network never drops. We assume it does.' },
+  { title: 'Mobile-first access.',                 body: 'Built and tested on affordable Android devices, the way most African families actually access the web.' },
+  { title: 'Shared devices.',                      body: 'A household phone shared between parent and child needs role-aware sign-in, not one-account-fits-all.' },
+  { title: 'Large classroom sizes.',               body: 'Attendance and grading designed for classes of 40+, not the 18-pupil edge case the West optimises for.' },
+  { title: 'Parent engagement challenges.',        body: 'Parents want to support learning. We make the path simple — a 5-minute activity beats a 30-minute portal.' },
+  { title: 'Administrative overload.',             body: 'School leaders should not have to choose between teaching and admin. We absorb the admin.' },
 ];
 
-function WhyAfricaFirst() {
+function WhyWeBuiltThis() {
   return (
     <section className="py-s-10 border-t border-line-1">
       <div className="max-w-[1280px] mx-auto px-s-6 lg:px-s-9">
-        <SectionHead num="02" eyebrow="Why Africa-first" title={<>Built for the realities most software <span className="ital-gold">ignores.</span></>} />
-        <div className="mt-s-9 grid md:grid-cols-2 gap-s-5">
-          {REASONS.map((r) => (
-            <article key={r.eyebrow} className="bg-surface-2 border border-line-1 rounded-r-3 p-s-7">
-              <div className="font-mono text-eyebrow uppercase text-gold-400">{r.eyebrow}</div>
-              <h3 className="mt-s-3 font-display text-display-3 text-ink-0">{r.title}</h3>
-              <p className="mt-s-3 text-body text-ink-2 max-w-[52ch]">{r.body}</p>
+        <SectionHead
+          num="02"
+          eyebrow="Why we built this"
+          title={<>Built for African classrooms. <span className="ital-gold">Not adapted later.</span></>}
+        />
+        <p className="mt-s-5 text-body-l text-ink-2 max-w-[68ch]">
+          Most educational platforms used in Africa were originally designed for
+          Western classrooms. They are often expensive, disconnected from local
+          curriculum standards, and difficult to use in low-connectivity
+          environments. Train To Teach Africa was built differently — designed
+          around the realities of African schools.
+        </p>
+
+        <div className="mt-s-9 grid md:grid-cols-2 lg:grid-cols-3 gap-s-5">
+          {REALITIES.map((r) => (
+            <article key={r.title} className="bg-surface-2 border border-line-1 rounded-r-3 p-s-6">
+              <h3 className="font-display text-display-3 text-ink-0">{r.title}</h3>
+              <p className="mt-s-3 text-body text-ink-2">{r.body}</p>
             </article>
           ))}
+        </div>
+
+        <p className="mt-s-9 text-body-l text-ink-2 max-w-[60ch] italic">
+          Our goal is simple: to make quality education more accessible,
+          measurable, and sustainable across Africa.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 04 Offline-First Technology
+// ---------------------------------------------------------------------------
+
+function OfflineFirst() {
+  return (
+    <section className="py-s-10 border-t border-line-1 bg-surface-2/40">
+      <div className="max-w-[1280px] mx-auto px-s-6 lg:px-s-9">
+        <SectionHead
+          num="03"
+          eyebrow="Offline-first"
+          title={<>Designed for <span className="ital-gold">real infrastructure</span> conditions.</>}
+        />
+        <div className="mt-s-9 grid lg:grid-cols-2 gap-s-7 items-start">
+          <div>
+            <p className="text-body-l text-ink-2">
+              Teachers should never lose attendance records because the internet
+              failed. Parents should still be able to access learning materials
+              with limited connectivity. Students should be able to continue
+              learning on low-cost devices.
+            </p>
+            <p className="mt-s-5 text-body-l text-ink-2">
+              That is why Train To Teach Africa is designed with offline-first
+              principles. Every critical action saves locally first and syncs
+              automatically in the background when connectivity returns.
+            </p>
+            <p className="mt-s-5 text-body text-ink-3">
+              The platform is tested for low-bandwidth environments and
+              optimised for affordable Android devices commonly used across
+              African communities.
+            </p>
+          </div>
+
+          <div className="grid gap-s-4">
+            <Reality eyebrow="Connectivity" title="Network blinks ≠ lost data." body="Every register, score, and payment saves locally first, syncs in the background." />
+            <Reality eyebrow="Devices"      title="Tecno Spark on throttled 3G." body="First contentful paint ≤ 1.8s. Initial JS payload ≤ 180 KB. Tested on real hardware." />
+            <Reality eyebrow="Curriculum"   title="NERDC + NAPPS aligned."        body="Built by Nigerian educators, for the curriculum your school actually teaches." />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Reality({ eyebrow, title, body }) {
+  return (
+    <article className="bg-surface-2 border border-line-1 rounded-r-3 p-s-6">
+      <div className="font-mono text-eyebrow uppercase text-gold-400">{eyebrow}</div>
+      <h3 className="mt-s-3 font-display text-[20px] leading-tight text-ink-0">{title}</h3>
+      <p className="mt-s-3 text-body text-ink-2">{body}</p>
+    </article>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 05 Parent Support
+// ---------------------------------------------------------------------------
+
+function ParentSupport() {
+  const items = [
+    'Simple lesson summaries',
+    'Downloadable learning guides',
+    'Nightly 5-minute learning activities',
+    'Discussion questions for home engagement',
+    'Academic progress tracking',
+    'Attendance visibility',
+    'Report cards and teacher feedback',
+  ];
+
+  return (
+    <section className="py-s-10 border-t border-line-1">
+      <div className="max-w-[1280px] mx-auto px-s-6 lg:px-s-9">
+        <SectionHead
+          num="04"
+          eyebrow="Parent support"
+          title={<>Helping parents <span className="ital-gold">participate</span> in learning.</>}
+        />
+
+        <div className="mt-s-9 grid lg:grid-cols-[1.1fr_1fr] gap-s-7 items-start">
+          <div>
+            <p className="text-body-l text-ink-2">
+              Many parents want to support their children academically but do
+              not always know how. Train To Teach Africa helps bridge that gap.
+            </p>
+            <p className="mt-s-5 text-body-l text-ink-2 italic">
+              Learning should not stop when the child leaves the classroom.
+            </p>
+            <div className="mt-s-7">
+              <Link to="/solutions/parents">
+                <Button intent="ghost" size="md">For parents →</Button>
+              </Link>
+            </div>
+          </div>
+
+          <ul className="bg-surface-2 border border-line-1 rounded-r-3 p-s-7 flex flex-col gap-s-3">
+            {items.map((item) => (
+              <li key={item} className="flex items-start gap-s-3 text-[14.5px] text-ink-1">
+                <CheckIcon />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>
@@ -252,7 +445,7 @@ function WhyAfricaFirst() {
 }
 
 // ---------------------------------------------------------------------------
-// Impact Metrics — live from Supabase
+// 06 Impact & Accountability — live from Supabase
 // ---------------------------------------------------------------------------
 
 function ImpactMetrics() {
@@ -262,13 +455,41 @@ function ImpactMetrics() {
   return (
     <section className="py-s-10 border-t border-line-1 bg-surface-2/40">
       <div className="max-w-[1280px] mx-auto px-s-6 lg:px-s-9">
-        <SectionHead num="03" eyebrow="Real numbers" title={<>Already in <span className="ital-gold">classrooms.</span></>} />
+        <SectionHead
+          num="05"
+          eyebrow="Impact & accountability"
+          title={<>Data that schools and partners <span className="ital-gold">can trust.</span></>}
+        />
+        <p className="mt-s-5 text-body-l text-ink-2 max-w-[68ch]">
+          Schools, NGOs, and education partners need measurable evidence. Train
+          To Teach Africa provides structured reporting and accountability tools
+          that help schools track educational outcomes over time. Every critical
+          action is logged and traceable.
+        </p>
+
         <div className="mt-s-9 grid grid-cols-2 lg:grid-cols-4 gap-s-5">
           <BigStat label="Schools onboarded" value={m.schools} />
           <BigStat label="Pupils reached" value={m.pupils} />
           <BigStat label="Lessons delivered" value={m.lessons} />
           <BigStat label="Avg. attendance lift" value={`+${m.attendanceLiftPts}pts`} />
         </div>
+
+        <ul className="mt-s-9 grid sm:grid-cols-2 lg:grid-cols-3 gap-x-s-7 gap-y-s-3 text-[13.5px] text-ink-2">
+          {[
+            'Attendance analysis',
+            'Academic performance trends',
+            'Student risk detection',
+            'Intervention tracking',
+            'School impact reporting',
+            'Term performance summaries',
+            'Evidence packages for inspections',
+          ].map((s) => (
+            <li key={s} className="flex items-start gap-s-2">
+              <span aria-hidden="true" className="text-gold-400 mt-[2px]">·</span>
+              <span>{s}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
@@ -289,18 +510,56 @@ function BigStat({ label, value }) {
 }
 
 // ---------------------------------------------------------------------------
-// Pricing teaser
+// 07 Who We Serve
+// ---------------------------------------------------------------------------
+
+const AUDIENCES = [
+  { title: 'Schools',             body: 'Modern school management without needing an internal IT team.' },
+  { title: 'Teachers',            body: 'Practical tools that reduce administrative stress and improve instructional delivery.' },
+  { title: 'Parents',             body: 'Clear visibility into learning progress and practical support for home learning.' },
+  { title: 'Students',            body: 'Structured, curriculum-aligned learning experiences designed for African learners.' },
+  { title: 'Education partners',  body: 'Reliable educational data, measurable outcomes, and scalable implementation support.' },
+];
+
+function WhoWeServe() {
+  return (
+    <section className="py-s-10 border-t border-line-1">
+      <div className="max-w-[1280px] mx-auto px-s-6 lg:px-s-9">
+        <SectionHead
+          num="06"
+          eyebrow="Who we serve"
+          title={<>For everyone who shapes <span className="ital-gold">a child's learning.</span></>}
+        />
+        <div className="mt-s-9 grid sm:grid-cols-2 lg:grid-cols-3 gap-s-5">
+          {AUDIENCES.map((a) => (
+            <article key={a.title} className="bg-surface-2 border border-line-1 rounded-r-3 p-s-7">
+              <h3 className="font-display text-display-3 text-ink-0">{a.title}</h3>
+              <p className="mt-s-3 text-body text-ink-2">{a.body}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 08 Pricing teaser
 // ---------------------------------------------------------------------------
 
 function PricingTeaser() {
   return (
-    <section className="py-s-10 border-t border-line-1">
+    <section className="py-s-10 border-t border-line-1 bg-surface-2/40">
       <div className="max-w-[1280px] mx-auto px-s-6 lg:px-s-9">
-        <SectionHead num="04" eyebrow="Pricing" title={<>Honest pricing, in <span className="ital-gold">your currency.</span></>} />
+        <SectionHead
+          num="07"
+          eyebrow="Pricing"
+          title={<>Affordable pricing for <span className="ital-gold">African families and schools.</span></>}
+        />
         <div className="mt-s-9 grid md:grid-cols-3 gap-s-5">
-          <TeaserCard audience="Parents" price="from ₦10,847" cadence="per term" />
-          <TeaserCard audience="Teachers" price="from ₦12,203" cadence="per term" featured />
-          <TeaserCard audience="Schools" price="from ₦61,012" cadence="per term" />
+          <TeaserCard audience="Parents"  price="from ₦12,240" cadence="per term · African curriculum" />
+          <TeaserCard audience="Teachers" price="from ₦14,688" cadence="per term · African curriculum" featured />
+          <TeaserCard audience="Schools"  price="from ₦78,657" cadence="per term · African curriculum" />
         </div>
         <div className="mt-s-7 text-center">
           <Link to="/pricing">
@@ -323,7 +582,46 @@ function TeaserCard({ audience, price, cadence, featured }) {
 }
 
 // ---------------------------------------------------------------------------
-// Final CTA
+// 09 Our Vision
+// ---------------------------------------------------------------------------
+
+function OurVision() {
+  return (
+    <section className="py-s-10 border-t border-line-1">
+      <div className="max-w-[1280px] mx-auto px-s-6 lg:px-s-9">
+        <SectionHead
+          num="08"
+          eyebrow="Our vision"
+          title={<>Building the operating system for <span className="ital-gold">African education.</span></>}
+        />
+        <div className="mt-s-9 grid lg:grid-cols-[1.1fr_1fr] gap-s-9">
+          <div>
+            <p className="text-body-l text-ink-2">
+              We believe Africa deserves educational technology built around its
+              realities, strengths, and future.
+            </p>
+            <p className="mt-s-5 text-body-l text-ink-2">
+              Train To Teach Africa exists to help schools operate more
+              effectively, help teachers teach with confidence, help parents
+              engage more meaningfully, and help learners access high-quality
+              educational opportunities.
+            </p>
+          </div>
+          <div className="bg-surface-2 border border-line-1 rounded-r-3 p-s-7 self-start">
+            <div className="font-mono text-eyebrow uppercase text-gold-400">Long-term horizon</div>
+            <p className="mt-s-3 text-body text-ink-1 italic">
+              We are building long-term educational infrastructure designed for
+              sustainable impact.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 10 Final CTA
 // ---------------------------------------------------------------------------
 
 function FinalCta() {
@@ -338,18 +636,25 @@ function FinalCta() {
           />
           <div className="relative">
             <h2 className="font-display text-display-2 text-ink-0">
-              Built in Lagos. <span className="ital-gold">For Africa.</span>
+              Join the future of <span className="ital-gold">African education.</span>
             </h2>
-            <p className="mt-s-5 text-body-l text-ink-2 max-w-[60ch] mx-auto">
-              Whether you run a school, teach a class, or raise a child — the
-              platform is ready when you are.
+            <p className="mt-s-5 text-body-l text-ink-2 max-w-[62ch] mx-auto">
+              Whether you are a school leader, teacher, parent, tutor, donor, or
+              education partner — there is a place for you in the Train To Teach
+              Africa ecosystem.
             </p>
-            <div className="mt-s-7 flex flex-wrap justify-center gap-s-4">
+            <div className="mt-s-8 flex flex-wrap justify-center gap-s-4">
               <Link to="/sign-up">
-                <Button intent="primary" size="lg">Start a parent account</Button>
+                <Button intent="primary" size="lg">Start Learning</Button>
               </Link>
               <Link to="/solutions/schools">
-                <Button intent="ghost" size="lg">Onboard your school →</Button>
+                <Button intent="ghost" size="lg">Request a School Demo →</Button>
+              </Link>
+              <Link to="/tutors">
+                <Button intent="ghost" size="lg">Join as a Tutor</Button>
+              </Link>
+              <Link to="/about#contact">
+                <Button intent="text" size="lg">Partner With Us</Button>
               </Link>
             </div>
           </div>
@@ -371,7 +676,17 @@ function SectionHead({ num, eyebrow, title }) {
           {num} · {eyebrow}
         </div>
       </div>
-      <h2 className="font-display text-display-2 text-ink-0 max-w-[18ch]">{title}</h2>
+      <h2 className="font-display text-display-2 text-ink-0 max-w-[22ch]">{title}</h2>
     </div>
+  );
+}
+
+// Inline check icon shared across the page.
+function CheckIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="mt-[3px] flex-shrink-0" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" fill="rgba(229,166,42,.12)" stroke="rgba(229,166,42,.5)" strokeWidth="1" />
+      <path d="M8 12.5l2.5 2.5L16 9" stroke="#e5a62a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }

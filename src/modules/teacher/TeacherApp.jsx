@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { useAttendance } from '@/hooks/useAttendance';
 import * as simsService from '@/services/simsService';
+import { InterventionsView } from '@/modules/teacher/InterventionsView';
 import * as reportsService from '@/services/reportsService';
 import { supabase } from '@/lib/supabase';
 
@@ -37,6 +38,7 @@ const NAV = [
   { to: '/app/teacher',             label: 'Dashboard',  end: true },
   { to: '/app/teacher/attendance',  label: 'Attendance'  },
   { to: '/app/teacher/gradebook',   label: 'Gradebook'   },
+  { to: '/app/teacher/interventions', label: 'Interventions' },
   { to: '/app/teacher/reports',     label: 'Reports'     },
 ];
 
@@ -49,6 +51,7 @@ export default function TeacherApp() {
       <Route path="attendance"       element={<AttendanceHub />} />
       <Route path="attendance/:cid"  element={<AttendanceRegister />} />
       <Route path="gradebook"        element={<GradebookHub />} />
+      <Route path="interventions" element={<InterventionsView />} />
       <Route path="reports"          element={<ReportsHub />} />
     </Routes>
   );

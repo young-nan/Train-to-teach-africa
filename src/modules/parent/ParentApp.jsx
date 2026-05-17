@@ -20,14 +20,16 @@ import { LessonPrintView } from './LessonPrintView';
 import { ChildEnrolmentView } from './ChildEnrolmentView';
 import { ReportCardPrint } from '@/modules/sims/ReportCardPrint';
 import { ParentBillingView } from '@/modules/billing/ParentBillingView';
+import { ParentCommsView } from './ParentCommsView';
 
 const NAV = [
-  { to: '/app/parent', label: 'Tonight', end: true },
-  { to: '/app/parent/children', label: 'Children' },
-  { to: '/app/parent/lessons', label: 'Lessons' },
-  { to: '/app/parent/reports', label: 'Reports' },
-  { to: '/app/parent/billing', label: 'Fees' },
-  { to: '/app/parent/subscribe', label: 'Subscribe' },
+  { to: '/app/parent',           label: 'Tonight',  end: true },
+  { to: '/app/parent/children',  label: 'Children'            },
+  { to: '/app/parent/lessons',   label: 'Lessons'             },
+  { to: '/app/parent/reports',   label: 'Reports'             },
+  { to: '/app/parent/messages',  label: 'Messages'            },
+  { to: '/app/parent/billing',   label: 'Fees'                },
+  { to: '/app/parent/subscribe', label: 'Subscribe'           },
 ];
 
 export default function ParentApp() {
@@ -39,7 +41,8 @@ export default function ParentApp() {
       <Route path="lessons/:lessonId" element={<LessonShell><LessonReaderView /></LessonShell>} />
       <Route path="reports" element={<ReportsShell><ParentReportsView /></ReportsShell>} />
       <Route path="reports/:pupilId/:term/:year/print" element={<ReportCardPrint />} />
-      <Route path="billing" element={<BillingShell><ParentBillingView /></BillingShell>} />
+      <Route path="messages"  element={<ParentCommsView />} />
+      <Route path="billing"   element={<ParentBillingView />} />
       <Route path="subscribe" element={<SubscribeShell><ParentSubscribeView /></SubscribeShell>} />
     </Routes>
   );
@@ -130,6 +133,14 @@ function Placeholder({ title }) {
 function ReportsShell({ children }) {
   return (
     <AppShell title="Reports" navItems={NAV}>
+      {children}
+    </AppShell>
+  );
+}
+
+function MessagesShell({ children }) {
+  return (
+    <AppShell title="Messages" navItems={NAV}>
       {children}
     </AppShell>
   );

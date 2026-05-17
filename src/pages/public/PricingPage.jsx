@@ -172,13 +172,14 @@ export default function PricingPage() {
           <div className="max-w-[1280px] mx-auto px-s-6 lg:px-s-9 py-s-10">
             <Chip variant="gold" dot>Pricing</Chip>
             <h1 className="mt-s-5 font-display text-display-1 text-ink-0">
-              Pricing built for the way{' '}
-              <span className="ital-gold">African families pay.</span>
+              Affordable pricing for{' '}
+              <span className="ital-gold">African families and schools.</span>
             </h1>
-            <p className="mt-s-5 text-body-l text-ink-2 max-w-[60ch]">
+            <p className="mt-s-5 text-body-l text-ink-2 max-w-[64ch]">
               African curriculum prices are denominated in Naira and stay
               fixed — no FX surprises. International curriculum prices are in
-              US Dollars.
+              US Dollars. USD equivalents shown next to NGN are informational
+              estimates.
             </p>
 
             {/* Stale-fallback notice — small, non-alarmist */}
@@ -186,7 +187,7 @@ export default function PricingPage() {
               <p className="mt-s-4 font-mono text-[11px] text-ink-3">
                 Prices shown are our published rates.
                 {' '}
-                <Link to="/contact" className="underline hover:text-ink-1">Contact us</Link>
+                <Link to="/about#contact" className="underline hover:text-ink-1">Contact us</Link>
                 {' '}if you need the latest figures.
               </p>
             )}
@@ -354,10 +355,10 @@ function PriceCard({ tier, audienceMeta, cadenceFallback, track, onSubscribe }) 
             </Link>
           </>
         ) : (
-          // School plans: self-serve Paystack is inappropriate for a ₦61K+
-          // enterprise product. Sales contact only.
+          // School plans: self-serve Paystack is inappropriate for an enterprise
+          // product. Sales contact only.
           <>
-            <Link to="/contact" className="text-center">
+            <Link to="/about#contact" className="text-center">
               <Button intent="primary" size="md" className="w-full justify-center">
                 Talk to sales →
               </Button>

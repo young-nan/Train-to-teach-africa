@@ -294,6 +294,7 @@ function LessonPlayer() {
         {phase === 'quiz' && lesson.content?.assessment && (
           <QuizSection
             assessment={lesson.content.assessment}
+            lessonId={lessonId}
             onComplete={(score) => complete.mutate({ score })}
             isSubmitting={complete.isPending}
           />
@@ -313,33 +314,105 @@ function LessonPlayer() {
   );
 }
 
+// ── IndexedDB lesson session — survives tab close mid-lesson ─────────────────
+//
+// Stores { lessonId, page, answers } in IndexedDB so a crash or accidental
+// close restores the student to exactly where they left off.
+// Key: `session:${lessonId}` — one slot per lesson, last-write-wins.
+
+const SESSION_STORE = 'lesson_sessions';
+
+function getSessionDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('tta-lesson-sessions', 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(SESSION_STORE)) {
+        req.result.createObjectStore(SESSION_STORE, { keyPath: 'lessonId' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveSession(lessonId, page, answers) {
+  try {
+    const db = await getSessionDb();
+    const tx = db.transaction(SESSION_STORE, 'readwrite');
+    tx.objectStore(SESSION_STORE).put({ lessonId, page, answers, savedAt: Date.now() });
+  } catch { /* IndexedDB unavailable — silently skip. Progress is still saved server-side. */ }
+}
+
+async function loadSession(lessonId) {
+  try {
+    const db = await getSessionDb();
+    return await new Promise((res) => {
+      const req = db.transaction(SESSION_STORE).objectStore(SESSION_STORE).get(lessonId);
+      req.onsuccess = () => res(req.result ?? null);
+      req.onerror   = () => res(null);
+    });
+  } catch { return null; }
+}
+
+async function clearSession(lessonId) {
+  try {
+    const db = await getSessionDb();
+    const tx = db.transaction(SESSION_STORE, 'readwrite');
+    tx.objectStore(SESSION_STORE).delete(lessonId);
+  } catch { /* silent */ }
+}
+
 // ── Lesson content ────────────────────────────────────────────────────────────
 
 function LessonContent({ lesson, pupilId, lessonId, onFinish }) {
-  const [page, setPage] = useState(0);
   const content = lesson.content;
 
-  // Build pages from the lesson content structure
+  // Build ordered pages: intro text → main text → each activity card
   const pages = [
-    content.introduction && { type: 'text', body: content.introduction },
-    content.mainContent  && { type: 'text', body: content.mainContent  },
-    ...(content.activities ?? []).map((a) => ({ type: 'activity', body: a })),
+    content.introduction && { type: 'reading', body: content.introduction },
+    content.mainContent  && { type: 'reading', body: content.mainContent  },
+    ...(content.activities ?? []).map((a) => ({
+      type: typeof a === 'string' ? 'practice' : (a.type ?? 'interactive'),
+      body: a,
+    })),
   ].filter(Boolean);
 
-  const isLast = page === pages.length - 1;
+  const [page, setPage]           = useState(0);
+  const [sessionLoaded, setSessionLoaded] = useState(false);
+
+  // Restore page position from IndexedDB on mount
+  useEffect(() => {
+    loadSession(lessonId).then((saved) => {
+      if (saved?.page && saved.page < pages.length) {
+        setPage(saved.page);
+      }
+      setSessionLoaded(true);
+    });
+  }, [lessonId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist page position on every navigation
+  useEffect(() => {
+    if (!sessionLoaded) return;
+    saveSession(lessonId, page, {});
+    const pct = Math.round(((page + 1) / Math.max(pages.length, 1)) * 99);
+    studentService.updateLessonProgress(pupilId, lessonId, pct);
+  }, [page, sessionLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isLast  = page === pages.length - 1;
   const current = pages[page];
 
-  // Update progress periodically
-  useEffect(() => {
-    const pct = Math.round(((page + 1) / pages.length) * 99); // 99 max — 100 set on complete
-    studentService.updateLessonProgress(pupilId, lessonId, pct);
-  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleFinish = () => {
+    clearSession(lessonId);
+    onFinish();
+  };
+
+  if (!sessionLoaded) return null; // brief — avoids flash to page 0 then jump
 
   if (pages.length === 0) {
     return (
       <div className="text-center py-s-9">
         <p className="text-body text-ink-2 mb-s-5">This lesson's content is being prepared.</p>
-        <Button intent="primary" onClick={onFinish}>Continue</Button>
+        <Button intent="primary" onClick={handleFinish}>Continue</Button>
       </div>
     );
   }
@@ -347,88 +420,231 @@ function LessonContent({ lesson, pupilId, lessonId, onFinish }) {
   return (
     <div>
       {/* Progress bar */}
-      <div className="mb-s-6 h-[4px] bg-surface-3 rounded-full overflow-hidden">
+      <div className="mb-s-5 h-[4px] bg-surface-3 rounded-full overflow-hidden">
         <div
-          className="h-full bg-gold-400 rounded-full transition-all"
+          className="h-full bg-gold-400 rounded-full transition-all duration-300"
           style={{ width: `${((page + 1) / pages.length) * 100}%` }}
         />
       </div>
-
-      {/* Page counter */}
-      <div className="font-mono text-meta text-ink-3 mb-s-5">
-        {page + 1} of {pages.length}
+      <div className="font-mono text-meta text-ink-4 mb-s-5">
+        {page + 1} / {pages.length}
       </div>
 
-      {/* Content */}
-      <div className="bg-surface-2 border border-line-1 rounded-r-4 p-s-8 mb-s-6 min-h-[200px]">
-        {current.type === 'text' && (
-          <div className="prose prose-invert max-w-none">
-            {current.body.split('\n\n').map((para, i) => (
-              <p key={i} className="text-body-l text-ink-1 leading-relaxed mb-s-4 last:mb-0">
-                {para}
-              </p>
-            ))}
-          </div>
-        )}
-        {current.type === 'activity' && (
-          <div>
-            <Chip variant="gold" className="mb-s-4">Activity</Chip>
-            <div className="text-body-l text-ink-1 leading-relaxed">
-              {typeof current.body === 'string'
-                ? current.body
-                : current.body?.instruction ?? JSON.stringify(current.body)
-              }
-            </div>
-          </div>
-        )}
+      {/* Content card */}
+      <div className="bg-surface-2 border border-line-1 rounded-r-4 mb-s-6 overflow-hidden min-h-[220px]">
+        <ActivityCard activity={current} />
       </div>
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between">
+      {/* Navigation — 48px min touch targets */}
+      <div className="flex items-center justify-between gap-s-3">
         <Button
           intent="ghost" size="lg"
           onClick={() => setPage((p) => Math.max(0, p - 1))}
           disabled={page === 0}
+          className="min-h-[48px] min-w-[80px]"
         >
           ← Back
         </Button>
-        <Button intent="primary" size="lg" onClick={() => isLast ? onFinish() : setPage((p) => p + 1)}>
-          {isLast ? 'Finish →' : 'Next →'}
+        <div className="flex gap-s-1">
+          {pages.map((_, i) => (
+            <div
+              key={i}
+              className={[
+                'w-[8px] h-[8px] rounded-full transition-all',
+                i === page ? 'bg-gold-400 w-[20px]' : i < page ? 'bg-gold-400/40' : 'bg-surface-4',
+              ].join(' ')}
+            />
+          ))}
+        </div>
+        <Button
+          intent="primary" size="lg"
+          onClick={() => isLast ? handleFinish() : setPage((p) => p + 1)}
+          className="min-h-[48px] min-w-[100px]"
+        >
+          {isLast ? 'Finish ✓' : 'Next →'}
         </Button>
       </div>
     </div>
   );
 }
 
-// ── Quiz section ──────────────────────────────────────────────────────────────
+// ── Activity card — renders all 4 activity types ──────────────────────────────
 
-function QuizSection({ assessment, onComplete, isSubmitting }) {
-  const questions = assessment?.questions ?? [];
-  const [answers, setAnswers]   = useState({});
-  const [submitted, setSubmitted] = useState(false);
-  const [scores, setScores]     = useState({});
+function ActivityCard({ activity }) {
+  const { type, body } = activity;
 
-  function selectAnswer(qIdx, optIdx) {
-    if (submitted) return;
-    setAnswers((prev) => ({ ...prev, [qIdx]: optIdx }));
+  // ── Reading / plain text ──
+  if (type === 'reading') {
+    const text = typeof body === 'string' ? body : (body?.body ?? '');
+    return (
+      <div className="p-s-7 sm:p-s-8">
+        {text.split('\n\n').map((para, i) => (
+          <p key={i} className="text-[17px] text-ink-1 leading-[1.75] mb-s-4 last:mb-0">
+            {para}
+          </p>
+        ))}
+      </div>
+    );
   }
 
+  // ── Interactive / practice ──
+  if (type === 'interactive' || type === 'practice') {
+    const title = body?.title ?? '';
+    const text  = typeof body === 'string' ? body : (body?.body ?? body?.instruction ?? '');
+    const payload = body?.payload ?? {};
+
+    return (
+      <div className="p-s-7 sm:p-s-8">
+        {title && (
+          <div className="flex items-center gap-s-3 mb-s-5">
+            <span className="text-[20px]">{type === 'practice' ? '✏️' : '💡'}</span>
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-gold-400">
+              {type === 'practice' ? 'Practice' : 'Activity'}
+            </span>
+          </div>
+        )}
+        {title && (
+          <h3 className="font-display text-[20px] text-ink-0 mb-s-4">{title}</h3>
+        )}
+        {text && (
+          <div className="text-[16px] text-ink-1 leading-[1.7] mb-s-4">
+            {text.split('\n\n').map((para, i) => (
+              <p key={i} className="mb-s-3 last:mb-0">{para}</p>
+            ))}
+          </div>
+        )}
+        {/* Steps list if payload has them */}
+        {Array.isArray(payload.steps) && payload.steps.length > 0 && (
+          <ol className="mt-s-4 space-y-s-2">
+            {payload.steps.map((step, i) => (
+              <li key={i} className="flex gap-s-3 text-[15px] text-ink-2">
+                <span className="font-mono text-gold-400 shrink-0">{i + 1}.</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+        {/* Materials list */}
+        {Array.isArray(payload.materials) && payload.materials.length > 0 && (
+          <div className="mt-s-5 bg-surface-3 rounded-r-2 p-s-4">
+            <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3 mb-s-2">You'll need</p>
+            <ul className="space-y-s-1">
+              {payload.materials.map((m, i) => (
+                <li key={i} className="text-[14px] text-ink-2">• {m}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Video ──
+  if (type === 'video') {
+    const url   = body?.payload?.url ?? body?.url ?? '';
+    const title = body?.title ?? 'Watch this';
+    const text  = body?.body ?? '';
+
+    return (
+      <div className="p-s-7 sm:p-s-8">
+        <div className="flex items-center gap-s-3 mb-s-4">
+          <span className="text-[20px]">▶️</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-gold-400">Video</span>
+        </div>
+        <h3 className="font-display text-[20px] text-ink-0 mb-s-4">{title}</h3>
+        {text && <p className="text-[15px] text-ink-2 mb-s-5">{text}</p>}
+        {url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-s-2 bg-gold-400 text-[#1a1305] px-s-5 py-s-3 rounded-r-2 font-medium text-[14px] hover:bg-gold-200 transition-colors min-h-[48px]"
+          >
+            Watch video ↗
+          </a>
+        ) : (
+          <div className="bg-surface-3 rounded-r-2 p-s-6 text-center text-ink-3 text-[13px]">
+            Video coming soon
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Fallback ──
+  return (
+    <div className="p-s-7 sm:p-s-8 text-[15px] text-ink-2">
+      {typeof body === 'string' ? body : JSON.stringify(body, null, 2)}
+    </div>
+  );
+}
+
+// ── Quiz section — all 4 question types ──────────────────────────────────────
+
+function QuizSection({ assessment, lessonId, onComplete, isSubmitting }) {
+  const questions = assessment?.questions ?? [];
+  const passMark  = assessment?.passMark  ?? 60;
+
+  // answers: { [qIdx]: string | number | boolean }
+  const [answers,   setAnswers]   = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [correct,   setCorrect]   = useState({});
+
+  // Restore quiz answers from IndexedDB (same session store, answers key)
+  useEffect(() => {
+    loadSession(lessonId).then((saved) => {
+      if (saved?.answers && Object.keys(saved.answers).length > 0) {
+        setAnswers(saved.answers);
+      }
+    });
+  }, [lessonId]);
+
+  // Persist answers as student fills them in
+  useEffect(() => {
+    if (Object.keys(answers).length > 0) {
+      loadSession(lessonId).then((saved) => {
+        saveSession(lessonId, saved?.page ?? 0, answers);
+      });
+    }
+  }, [answers, lessonId]);
+
+  function setAnswer(qIdx, value) {
+    if (submitted) return;
+    setAnswers((prev) => ({ ...prev, [qIdx]: value }));
+  }
+
+  const allAnswered = questions.every((_, i) => answers[i] !== undefined && answers[i] !== '');
+
   function handleSubmit() {
-    if (Object.keys(answers).length < questions.length) return;
+    if (!allAnswered) return;
     setSubmitted(true);
 
-    // Grade client-side (instant feedback)
-    const newScores = {};
-    let correct = 0;
+    const newCorrect = {};
+    let correctCount = 0;
     questions.forEach((q, i) => {
-      const isCorrect = answers[i] === q.correct_index;
-      newScores[i] = isCorrect;
-      if (isCorrect) correct++;
+      let isCorrect = false;
+      const ans = answers[i];
+      if (q.type === 'mcq') {
+        // answer field holds the correct option string; options is the list
+        const correctIdx = (q.options ?? []).findIndex(
+          (o) => String(o).toLowerCase() === String(q.answer).toLowerCase()
+        );
+        isCorrect = ans === correctIdx || String(ans) === String(q.answer);
+      } else if (q.type === 'true_false') {
+        isCorrect = String(ans).toLowerCase() === String(q.answer).toLowerCase();
+      } else if (q.type === 'numeric') {
+        isCorrect = Math.abs(Number(ans) - Number(q.answer)) < 0.001;
+      } else if (q.type === 'short_answer') {
+        isCorrect = String(ans).trim().toLowerCase() === String(q.answer).trim().toLowerCase();
+      }
+      newCorrect[i] = isCorrect;
+      if (isCorrect) correctCount++;
     });
-    setScores(newScores);
 
-    const pct = Math.round((correct / questions.length) * 100);
-    setTimeout(() => onComplete(pct), 1500);  // brief pause for feedback
+    setCorrect(newCorrect);
+    const pct = Math.round((correctCount / questions.length) * 100);
+    clearSession(lessonId);
+    setTimeout(() => onComplete(pct), 1200);
   }
 
   if (questions.length === 0) {
@@ -438,63 +654,176 @@ function QuizSection({ assessment, onComplete, isSubmitting }) {
 
   return (
     <div>
-      <div className="font-mono text-eyebrow uppercase text-gold-400 mb-s-6">
-        Quick check — {questions.length} question{questions.length !== 1 ? 's' : ''}
+      <div className="flex items-center justify-between mb-s-6">
+        <div className="font-mono text-eyebrow uppercase text-gold-400">
+          Quiz — {questions.length} question{questions.length !== 1 ? 's' : ''}
+        </div>
+        <div className="font-mono text-meta text-ink-3">Pass: {passMark}%</div>
       </div>
 
       <div className="space-y-s-6">
         {questions.map((q, qIdx) => (
-          <div key={qIdx} className="bg-surface-2 border border-line-1 rounded-r-3 p-s-6">
-            <div className="text-body-l text-ink-0 mb-s-4">
-              {qIdx + 1}. {q.question}
-            </div>
-            <div className="space-y-s-2">
-              {(q.options ?? []).map((opt, oIdx) => {
-                const isSelected = answers[qIdx] === oIdx;
-                const isCorrect  = submitted && oIdx === q.correct_index;
-                const isWrong    = submitted && isSelected && !isCorrect;
-
-                return (
-                  <button
-                    key={oIdx}
-                    onClick={() => selectAnswer(qIdx, oIdx)}
-                    disabled={submitted}
-                    className={[
-                      'w-full text-left px-s-4 py-s-3 rounded-r-2 border text-body transition-all',
-                      isCorrect ? 'border-green-400 bg-green-400/10 text-green-300'
-                        : isWrong ? 'border-red-400 bg-red-400/10 text-red-300'
-                        : isSelected ? 'border-gold-400 bg-gold-400/10 text-gold-200'
-                        : 'border-line-2 bg-surface-3 text-ink-1 hover:border-line-1',
-                    ].join(' ')}
-                  >
-                    <span className="font-mono text-meta mr-s-2">
-                      {String.fromCharCode(65 + oIdx)}.
-                    </span>
-                    {opt}
-                    {isCorrect && ' ✓'}
-                    {isWrong   && ' ✗'}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <QuestionCard
+            key={qIdx}
+            question={q}
+            index={qIdx}
+            answer={answers[qIdx]}
+            isCorrect={submitted ? correct[qIdx] : undefined}
+            submitted={submitted}
+            onAnswer={(val) => setAnswer(qIdx, val)}
+          />
         ))}
       </div>
 
       {!submitted && (
         <Button
           intent="primary" size="lg"
-          className="mt-s-7 w-full justify-center"
+          className="mt-s-7 w-full justify-center min-h-[56px]"
           onClick={handleSubmit}
-          disabled={Object.keys(answers).length < questions.length || isSubmitting}
+          disabled={!allAnswered || isSubmitting}
         >
           Submit answers
         </Button>
       )}
 
-      {submitted && !isSubmitting && (
+      {submitted && (
         <div className="mt-s-5 text-center font-mono text-meta text-ink-3 animate-pulse">
           Saving your score…
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Individual question card ──────────────────────────────────────────────────
+
+function QuestionCard({ question, index, answer, isCorrect, submitted, onAnswer }) {
+  const { type, prompt, options = [], answer: correctAnswer, explanation } = question;
+
+  const feedbackClass =
+    isCorrect === true  ? 'border-green-400'  :
+    isCorrect === false ? 'border-red-400'     : 'border-line-1';
+
+  return (
+    <div className={`bg-surface-2 border rounded-r-3 p-s-6 transition-colors ${feedbackClass}`}>
+      <div className="flex gap-s-3 mb-s-5">
+        <span className="font-mono text-meta text-ink-4 shrink-0 mt-[2px]">{index + 1}.</span>
+        <div className="text-[17px] text-ink-0 leading-snug">{prompt}</div>
+      </div>
+
+      {/* MCQ */}
+      {type === 'mcq' && (
+        <div className="space-y-s-2">
+          {options.map((opt, oIdx) => {
+            const isSelected = answer === oIdx;
+            const optIsCorrect = submitted && String(opt).toLowerCase() === String(correctAnswer).toLowerCase();
+            const optIsWrong   = submitted && isSelected && !optIsCorrect;
+            return (
+              <button
+                key={oIdx}
+                onClick={() => onAnswer(oIdx)}
+                disabled={submitted}
+                className={[
+                  'w-full text-left px-s-4 py-s-4 rounded-r-2 border text-[15px] transition-all min-h-[48px]',
+                  optIsCorrect ? 'border-green-400 bg-green-400/10 text-green-300'
+                    : optIsWrong   ? 'border-red-400 bg-red-400/10 text-red-300'
+                    : isSelected   ? 'border-gold-400 bg-gold-400/10 text-gold-200'
+                    : 'border-line-2 bg-surface-3 text-ink-1 hover:border-line-3',
+                ].join(' ')}
+              >
+                <span className="font-mono text-meta mr-s-2">{String.fromCharCode(65 + oIdx)}.</span>
+                {opt}
+                {optIsCorrect && ' ✓'}
+                {optIsWrong   && ' ✗'}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* True / False */}
+      {type === 'true_false' && (
+        <div className="flex gap-s-3">
+          {['True', 'False'].map((val) => {
+            const isSelected   = String(answer).toLowerCase() === val.toLowerCase();
+            const valIsCorrect = submitted && val.toLowerCase() === String(correctAnswer).toLowerCase();
+            const valIsWrong   = submitted && isSelected && !valIsCorrect;
+            return (
+              <button
+                key={val}
+                onClick={() => onAnswer(val.toLowerCase())}
+                disabled={submitted}
+                className={[
+                  'flex-1 py-s-4 rounded-r-2 border font-medium text-[15px] transition-all min-h-[48px]',
+                  valIsCorrect ? 'border-green-400 bg-green-400/10 text-green-300'
+                    : valIsWrong   ? 'border-red-400 bg-red-400/10 text-red-300'
+                    : isSelected   ? 'border-gold-400 bg-gold-400/10 text-gold-200'
+                    : 'border-line-2 bg-surface-3 text-ink-1 hover:border-line-3',
+                ].join(' ')}
+              >
+                {val}
+                {valIsCorrect && ' ✓'}
+                {valIsWrong   && ' ✗'}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Numeric */}
+      {type === 'numeric' && (
+        <div className="flex items-center gap-s-3">
+          <input
+            type="number"
+            value={answer ?? ''}
+            onChange={(e) => onAnswer(e.target.value)}
+            disabled={submitted}
+            placeholder="Enter a number"
+            className={[
+              'bg-surface-3 border rounded-r-2 px-s-4 py-s-3 text-[15px] text-ink-0 outline-none',
+              'min-h-[48px] w-[160px] transition-colors',
+              submitted
+                ? isCorrect ? 'border-green-400' : 'border-red-400'
+                : 'border-line-2 focus:border-gold-400',
+            ].join(' ')}
+          />
+          {submitted && (
+            <span className={isCorrect ? 'text-green-400' : 'text-red-400'}>
+              {isCorrect ? '✓ Correct' : `✗ Answer: ${correctAnswer}`}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Short answer */}
+      {type === 'short_answer' && (
+        <div>
+          <input
+            type="text"
+            value={answer ?? ''}
+            onChange={(e) => onAnswer(e.target.value)}
+            disabled={submitted}
+            placeholder="Type your answer…"
+            className={[
+              'w-full bg-surface-3 border rounded-r-2 px-s-4 py-s-3 text-[15px] text-ink-0 outline-none',
+              'min-h-[48px] transition-colors',
+              submitted
+                ? isCorrect ? 'border-green-400' : 'border-red-400'
+                : 'border-line-2 focus:border-gold-400',
+            ].join(' ')}
+          />
+          {submitted && !isCorrect && (
+            <p className="mt-s-2 text-[13px] text-ink-3">
+              Model answer: <span className="text-ink-1">{correctAnswer}</span>
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Explanation after submission */}
+      {submitted && explanation && (
+        <div className="mt-s-4 bg-surface-3 rounded-r-2 p-s-3 text-[13px] text-ink-2">
+          💡 {explanation}
         </div>
       )}
     </div>

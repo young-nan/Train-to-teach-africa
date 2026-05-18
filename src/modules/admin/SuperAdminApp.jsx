@@ -35,6 +35,7 @@ import * as tiersService from '@/services/tiersService';
 import * as tutorService from '@/services/tutorService';
 import { ImpactDashboardView } from './ImpactDashboardView';
 import { LessonContentView }   from './LessonContentView';
+import { TiersView }           from './TiersView';
 
 const NAV = [
   { to: '/app/super',          label: 'Overview',  end: true },
@@ -57,7 +58,7 @@ export default function SuperAdminApp() {
       <Route path="content"      element={<ContentShell />} />
       <Route path="tiers"        element={<TiersShell />} />
       <Route path="revenue"      element={<RevenueView />} />
-      <Route path="impact"       element={<ImpactDashboardView />} />
+      <Route path="impact"       element={<ImpactShell />} />
     </Routes>
   );
 }
@@ -649,6 +650,14 @@ function TutorsView() {
   );
 }
 
+function ImpactShell() {
+  return (
+    <AppShell title="Impact" navItems={NAV}>
+      <ImpactDashboardView />
+    </AppShell>
+  );
+}
+
 // ── Content (lesson authoring tool) ──────────────────────────────────────────
 
 function ContentShell() {
@@ -662,8 +671,6 @@ function ContentShell() {
 // ── Tiers (pricing) — same TiersView, super-admin shell ───────────────────────
 
 function TiersShell() {
-  // Lazy import to avoid circular deps
-  const { TiersView } = require('./TiersView');
   return (
     <AppShell title="Pricing" navItems={NAV}>
       <TiersView />

@@ -362,6 +362,12 @@ export function AppShell({ navItems = [], children, title }) {
               </div>
             </div>
           </div>
+          <Link
+            to="/account"
+            className="w-full text-left px-s-4 py-s-3 rounded-r-2 text-[13px] text-ink-3 hover:text-ink-0 hover:bg-surface-3/50 block"
+          >
+            Account settings
+          </Link>
           <button
             onClick={onSignOut}
             className="w-full text-left px-s-4 py-s-3 rounded-r-2 text-[13px] text-ink-3 hover:text-ink-0 hover:bg-surface-3/50"
@@ -474,7 +480,14 @@ export function AppShell({ navItems = [], children, title }) {
                 </div>
 
                 {/* Sign out — always at the bottom of the sheet */}
-                <div className="mx-s-4 mb-s-4 border-t border-line-1 pt-s-4">
+                <div className="mx-s-4 mb-s-4 border-t border-line-1 pt-s-4 space-y-s-1">
+                  <Link
+                    to="/account"
+                    onClick={() => setMoreOpen(false)}
+                    className="w-full text-left px-s-4 py-s-3 rounded-r-2 text-[14px] text-ink-3 hover:text-ink-0 hover:bg-surface-3/50 block"
+                  >
+                    Account settings
+                  </Link>
                   <button
                     onClick={onSignOut}
                     className="w-full text-left px-s-4 py-s-3 rounded-r-2 text-[14px] text-ink-3 hover:text-ink-0 hover:bg-surface-3/50"

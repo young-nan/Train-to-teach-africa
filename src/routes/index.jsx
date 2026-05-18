@@ -54,7 +54,9 @@ const ParentApp    = lazy(() => import('@/modules/parent/ParentApp'));
 const StudentApp   = lazy(() => import('@/modules/student/StudentApp'));
 
 // Shared / billing
-const BillingReturnPage = lazy(() => import('@/modules/billing/BillingReturnPage'));
+const BillingReturnPage  = lazy(() => import('@/modules/billing/BillingReturnPage'));
+const CheckoutPage       = lazy(() => import('@/pages/billing/CheckoutPage'));
+const AccountSettingsPage = lazy(() => import('@/pages/account/AccountSettingsPage'));
 
 // ── Wrapper helper ────────────────────────────────────────────────────────────
 function App({ children }) {
@@ -87,6 +89,26 @@ const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <App><BillingReturnPage /></App>
+      </RequireAuth>
+    ),
+  },
+
+  // ── Checkout — /billing/checkout?plan=PLAN_CODE ──────────────────────────────
+  // Public but shows a sign-in prompt when unauthenticated. Separate from
+  // /billing/return — this is the pre-payment summary page; return is post.
+  {
+    path: '/billing/checkout',
+    element: <App><CheckoutPage /></App>,
+  },
+
+  // ── Account settings — /account ─────────────────────────────────────────────
+  // Available to every authenticated role. No role guard — any logged-in
+  // user should be able to edit their name, phone, and password.
+  {
+    path: '/account',
+    element: (
+      <RequireAuth>
+        <App><AccountSettingsPage /></App>
       </RequireAuth>
     ),
   },

@@ -1,0 +1,179 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================================================
+   Design System v2 — Global CSS
+   May 2026 · Train To Teach Africa
+
+   Structure:
+     1. CSS custom properties  — token bridge between Tailwind + raw CSS
+     2. Base layer             — resets, focus ring, selection, scroll
+     3. Utility layer          — ital-gold, font-heading, product-accent helpers
+     4. Product theme defaults — --product-accent set at root (public surface)
+   ============================================================================= */
+
+/* ── 1. CSS custom properties (token bridge) ──────────────────────────────── */
+/* These mirror the Tailwind config so raw-CSS contexts (SVG, portal elements,
+   pseudo-elements, the design system HTML doc) can use the same values.      */
+
+:root {
+  /* Surfaces */
+  --c-surface-0: #0a0c16;
+  --c-surface-1: #0d0f1a;
+  --c-surface-2: #13162a;
+  --c-surface-3: #1a1d30;
+  --c-surface-4: #22263c;
+  --c-surface-5: #2c3149;
+
+  /* Ink */
+  --c-ink-0: #ffffff;
+  --c-ink-1: #eef0f7;
+  --c-ink-2: #b6bbcf;
+  --c-ink-3: #7a8099;
+  --c-ink-4: #4f5469;
+
+  /* Gold */
+  --c-gold-50:  #fbf3dd;
+  --c-gold-200: #f1d182;
+  --c-gold-400: #e5a62a;
+  --c-gold-500: #c98c1c;
+  --c-gold-600: #a8720f;
+
+  /* Semantic */
+  --c-teal-400:    #22b8a6;   /* SIMS accent */
+  --c-emerald-200: #6ee7b7;   /* Tutor marketplace light */
+  --c-emerald-400: #10b981;   /* Tutor marketplace */
+  --c-rose-200:    #fda4af;   /* Parent platform light */
+  --c-rose-400:    #fb7185;   /* Parent platform */
+  --c-coral-400:   #f97066;   /* Student dashboard */
+  --c-red-400:     #ef5350;
+  --c-green-400:   #3fb950;
+  --c-amber-400:   #f5a524;
+
+  /* Strokes */
+  --c-line-1: rgba(255,255,255,0.06);
+  --c-line-2: rgba(255,255,255,0.10);
+  --c-line-3: rgba(255,255,255,0.16);
+
+  /* Fonts */
+  --f-display: "Crimson Text", Georgia, serif;
+  --f-heading: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  --f-sans:    Inter, system-ui, sans-serif;
+  --f-mono:    "JetBrains Mono", "Space Grotesk", ui-monospace, monospace;
+
+  /* Spacing */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px; --s-5: 20px;
+  --s-6: 24px; --s-7: 32px; --s-8: 40px; --s-9: 48px; --s-10: 64px;
+
+  /* Radii */
+  --r-1: 4px; --r-2: 8px; --r-3: 12px; --r-4: 16px; --r-5: 24px;
+
+  /* ── Product accent — defaults to public/marketing surface ──────────────
+     Each top-level module wrapper overrides --product-accent + --product-glow
+     via inline style (see ProductThemeProvider.jsx).
+     Components can read var(--product-accent) without knowing which surface
+     they're on — the provider handles the switch.                           */
+  --product-accent: var(--c-gold-400);
+  --product-glow:   rgba(229,166,42,0.10);
+}
+
+/* ── 2. Base layer ────────────────────────────────────────────────────────── */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Honour reduced-motion preference globally */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Default focus ring — 2px gold, 3px offset (WCAG 2.4.11) */
+  :focus-visible {
+    outline: 2px solid theme('colors.gold.400');
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* Selection — gold tint on dark surfaces */
+  ::selection {
+    background-color: theme('colors.gold.400');
+    color: #1a1305;
+  }
+}
+
+/* ── 3. Utility layer ─────────────────────────────────────────────────────── */
+
+@layer utilities {
+
+  /* ── "Editorial italic gold" ────────────────────────────────────────────
+     The single most recognisable TTA brand gesture.
+     Appears once per display heading — the italic emphasis that separates
+     TTA from generic SaaS. Never used for multiple spans on the same page.
+
+     Usage:
+       <h1 className="font-display text-display-1 text-ink-0">
+         Africa's Education <span className="ital-gold">Operating System.</span>
+       </h1>
+  ─────────────────────────────────────────────────────────────────────── */
+  .ital-gold {
+    font-style: italic;
+    color: theme('colors.gold.200');
+    font-weight: 400;
+  }
+
+  /* ── font-heading utility ───────────────────────────────────────────────
+     Plus Jakarta Sans for dashboard product headings (h1/h2/h3 inside the
+     app shell). Crimson Text (font-display) stays for marketing + reports.
+
+     Usage:
+       <h2 className="font-heading text-[22px] font-semibold text-ink-0">
+         Class register
+       </h2>
+  ─────────────────────────────────────────────────────────────────────── */
+  .font-heading {
+    font-family: theme('fontFamily.heading');
+  }
+
+  /* ── Product glow radial ────────────────────────────────────────────────
+     Adds the per-surface ambient glow behind the main content area.
+     Read from --product-glow set by ProductThemeProvider.
+
+     Usage: add .product-glow-bg to the top-level wrapper inside each module.
+  ─────────────────────────────────────────────────────────────────────── */
+  .product-glow-bg {
+    background-image: radial-gradient(
+      ellipse 80% 60% at 50% -10%,
+      var(--product-glow),
+      transparent 60%
+    );
+  }
+
+  /* ── Tabular numbers — prevents jitter in KPI counters ─────────────── */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Line clamp utilities (not in Tailwind v3 core for 2/3 lines) ──── */
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+}

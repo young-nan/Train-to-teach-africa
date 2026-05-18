@@ -6,11 +6,13 @@
  * confident things — never an inbox of metrics.
  */
 
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { AppShell } from '@/components/layout/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { Button } from '@/components/ui/Button';
+import { UpNextCard } from '@/components/ui/UpNextCard';
 import { useAuth } from '@/hooks/useAuth';
 import { getGreeting } from '@/utils/greeting';
 import { ParentReportsView } from './ParentReportsView';
@@ -22,6 +24,8 @@ import { ReportCardPrint } from '@/modules/sims/ReportCardPrint';
 import { ParentBillingView } from '@/modules/billing/ParentBillingView';
 import { ParentCommsView } from './ParentCommsView';
 import { WhatsAppOptInView } from './WhatsAppOptInView';
+import * as simsService from '@/services/simsService';
+import { supabase } from '@/lib/supabase';
 
 const NAV = [
   { to: '/app/parent',           label: 'Tonight',   end: true },
@@ -53,67 +57,144 @@ export default function ParentApp() {
 
 function TonightView() {
   const { profile } = useAuth();
-  const firstName = profile?.full_name?.split(' ')[0] ?? 'There';
+  const navigate    = useNavigate();
+  const firstName   = profile?.full_name?.split(' ')[0] ?? 'There';
+
+  // Load children
+  const { data: children } = useQuery({
+    queryKey: ['parent', 'children'],
+    queryFn:  () => simsService.getMyChildren(),
+    staleTime: 300_000,
+  });
+
+  // Pick the first child for the hero card
+  const firstChild = children?.[0];
+
+  // Fetch tonight's lesson for that child's level
+  const { data: lesson, isLoading: lessonLoading } = useQuery({
+    queryKey: ['parent', 'tonight-lesson', firstChild?.id],
+    queryFn: async () => {
+      if (!firstChild?.level) return null;
+      // Week-of-term heuristic (matches the nightly digest logic)
+      const month = new Date().getMonth() + 1;
+      const weekOfTerm = month >= 9 ? 8 : month <= 3 ? 4 : 4; // mid-term fallback
+      const { data, error } = await supabase
+        .from('lessons')
+        .select('id, title, subject, topic, level, estimated_minutes, content, sort_index, week_of_term')
+        .eq('level', firstChild.level)
+        .eq('status', 'published')
+        .order('sort_index', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    enabled: !!firstChild?.level,
+    staleTime: 60_000,
+  });
+
+  // Attendance for first child this week
+  const { data: weekAttendance } = useQuery({
+    queryKey: ['parent', 'week-attendance', firstChild?.id],
+    queryFn: async () => {
+      if (!firstChild?.id) return null;
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const { data } = await supabase
+        .from('attendance')
+        .select('status')
+        .eq('pupil_id', firstChild.id)
+        .gte('date', weekAgo);
+      return data ?? [];
+    },
+    enabled: !!firstChild?.id,
+    staleTime: 300_000,
+  });
+
+  const presentDays  = weekAttendance?.filter((r) => r.status === 'present').length ?? 0;
+  const totalDays    = weekAttendance?.length ?? 5;
+
+  // Shape lesson for UpNextCard
+  const shapedLesson = lesson ? {
+    title:             lesson.title,
+    subject:           lesson.subject,
+    topic:             lesson.topic,
+    level:             lesson.level,
+    estimatedMinutes:  lesson.estimated_minutes ?? 5,
+    kitchenActivity:   lesson.content?.layers?.parentKitchenActivity
+                    ?? lesson.content?.layers?.parent_kitchen_activity
+                    ?? '',
+  } : null;
+
   return (
     <AppShell title="Tonight" navItems={NAV}>
       <div className="max-w-[820px]">
+        {/* Greeting */}
         <div className="mb-s-7">
-          <div className="font-mono text-eyebrow uppercase text-gold-400">Tonight's home support</div>
+          <div className="font-mono text-eyebrow uppercase text-gold-400">
+            Tonight's home support
+          </div>
           <h2 className="mt-s-3 font-display text-display-2 text-ink-0">
             {getGreeting()}, <span className="ital-gold">{firstName}.</span>
           </h2>
         </div>
 
-        {/* The hero card — what's tonight's home activity */}
-        <Card className="bg-surface-2 border-line-2 mb-s-5">
-          <div className="flex flex-wrap items-center gap-s-3 mb-s-4">
-            <Chip variant="gold" dot>Adaeze · Primary 3</Chip>
-            <Chip variant="default">Maths · Fractions</Chip>
+        {/* Child tabs if multiple children */}
+        {children && children.length > 1 && (
+          <div className="flex flex-wrap gap-s-2 mb-s-5">
+            {children.map((child) => (
+              <div
+                key={child.id}
+                className="flex items-center gap-s-2 px-s-4 py-s-2 rounded-full bg-surface-2 border border-line-2"
+              >
+                <div className="w-[24px] h-[24px] rounded-full bg-gold-400/15 border border-gold-400/25 grid place-items-center font-mono text-[10px] text-gold-200">
+                  {child.full_name?.[0]?.toUpperCase()}
+                </div>
+                <span className="text-[13px] text-ink-1">{child.full_name?.split(' ')[0]}</span>
+                <span className="font-mono text-[10px] text-ink-3">{child.level}</span>
+              </div>
+            ))}
           </div>
-          <h3 className="font-display text-[28px] leading-tight text-ink-0">
-            Adaeze is learning <span className="ital-gold">fractions</span> tonight.
-          </h3>
-          <p className="mt-s-4 text-body-l text-ink-2 max-w-[60ch]">
-            A fraction is a piece of a whole. Today she learned to spot halves
-            and quarters in everyday things.
-          </p>
+        )}
 
-          <div className="mt-s-7 grid md:grid-cols-2 gap-s-5">
-            <div className="bg-surface-3 border border-gold-400/30 rounded-r-2 p-s-5">
-              <div className="font-mono text-eyebrow uppercase text-gold-400 mb-s-2">5-minute kitchen activity</div>
-              <p className="text-body text-ink-1 leading-relaxed">
-                Cut a pancake into halves, then quarters. Ask her to point to
-                "two quarters" and "one half" — they're the same thing.
-              </p>
-            </div>
-            <div className="bg-surface-3 border border-line-2 rounded-r-2 p-s-5">
-              <div className="font-mono text-eyebrow uppercase text-gold-400 mb-s-2">3 dinner questions</div>
-              <ul className="text-body text-ink-1 space-y-s-2 list-decimal list-inside">
-                <li>How many halves make a whole?</li>
-                <li>Show me a quarter using your fingers.</li>
-                <li>Which is bigger — a half or a quarter?</li>
-              </ul>
-            </div>
-          </div>
-        </Card>
+        {/* Hero UpNextCard */}
+        <div className="mb-s-6">
+          <UpNextCard
+            lesson={shapedLesson}
+            childName={firstChild?.full_name}
+            variant="parent"
+            isLoading={lessonLoading}
+            onStart={() => lesson && navigate(`/app/parent/lessons/${lesson.id}`)}
+            onSave={() => {/* save-for-later in v2 */}}
+          />
+        </div>
 
-        {/* Quick child overview strip */}
+        {/* Quick stats strip */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-s-4">
           <Card className="bg-surface-2">
             <div className="font-mono text-eyebrow uppercase text-gold-400">This week</div>
-            <div className="mt-s-3 font-display text-[28px] text-ink-0 leading-none">4 / 5</div>
+            <div className="mt-s-3 font-display text-[28px] text-ink-0 leading-none">
+              {presentDays} / {totalDays}
+            </div>
             <div className="mt-s-2 font-mono text-meta text-ink-3">days at school</div>
           </Card>
+
           <Card className="bg-surface-2">
-            <div className="font-mono text-eyebrow uppercase text-gold-400">Last quiz</div>
-            <div className="mt-s-3 font-display text-[28px] text-ink-0 leading-none">88%</div>
-            <div className="mt-s-2 font-mono text-meta text-ink-3">Maths · fractions</div>
+            <div className="font-mono text-eyebrow uppercase text-gold-400">Children</div>
+            <div className="mt-s-3 font-display text-[28px] text-ink-0 leading-none">
+              {children?.length ?? '—'}
+            </div>
+            <Link to="/app/parent/children" className="mt-s-3 inline-block">
+              <Button intent="ghost" size="sm">Manage →</Button>
+            </Link>
           </Card>
+
           <Card className="bg-surface-2">
             <div className="font-mono text-eyebrow uppercase text-gold-400">Term report</div>
-            <div className="mt-s-3 font-display text-[18px] text-ink-0 leading-tight">Available 12 December</div>
+            <div className="mt-s-3 font-display text-[18px] text-ink-0 leading-tight">
+              {firstChild ? `${firstChild.full_name?.split(' ')[0]}'s reports` : 'Reports'}
+            </div>
             <Link to="/app/parent/reports" className="mt-s-3 inline-block">
-              <Button intent="ghost" size="sm">See last term →</Button>
+              <Button intent="ghost" size="sm">View →</Button>
             </Link>
           </Card>
         </div>

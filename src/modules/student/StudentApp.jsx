@@ -33,6 +33,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { Button } from '@/components/ui/Button';
+import { UpNextCard } from '@/components/ui/UpNextCard';
 import { useAuth } from '@/hooks/useAuth';
 import * as studentService from '@/services/studentService';
 
@@ -112,44 +113,15 @@ function TodayView() {
           </div>
         </div>
 
-        {/* NEXT LESSON — the primary action */}
-        {nextLoading && <NextLessonSkeleton />}
-
-        {!nextLoading && nextLesson && (
-          <div className="bg-surface-2 border-2 border-gold-400/40 rounded-r-4 p-s-9 shadow-gold mb-s-6">
-            {nextLesson.isNew ? (
-              <Chip variant="gold" dot className="mb-s-4">Next up</Chip>
-            ) : (
-              <div className="flex items-center gap-s-3 mb-s-4">
-                <Chip variant="amber" dot>In progress</Chip>
-                <div className="flex-1 h-[6px] bg-surface-3 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gold-400 rounded-full"
-                    style={{ width: `${nextLesson.completionPct}%` }}
-                  />
-                </div>
-                <span className="font-mono text-meta text-ink-3">{nextLesson.completionPct}%</span>
-              </div>
-            )}
-
-            <h2 className="font-display text-[36px] leading-tight text-ink-0 mb-s-3">
-              {nextLesson.title}
-            </h2>
-            <p className="text-body text-ink-2 mb-s-7">
-              {nextLesson.subject}
-              {nextLesson.topic && ` · ${nextLesson.topic}`}
-              {' · '}{nextLesson.estimated_minutes} min
-            </p>
-
-            <Button
-              intent="primary"
-              size="lg"
-              onClick={() => navigate(`/app/student/lesson/${nextLesson.lesson_id}`)}
-            >
-              {nextLesson.isNew ? 'Start lesson →' : 'Continue →'}
-            </Button>
-          </div>
-        )}
+        {/* NEXT LESSON — UpNextCard composite */}
+        <div className="mb-s-6">
+          <UpNextCard
+            lesson={nextLesson}
+            variant="student"
+            isLoading={nextLoading}
+            onStart={() => nextLesson && navigate(`/app/student/lesson/${nextLesson.lesson_id}`)}
+          />
+        </div>
 
         {!nextLoading && !nextLesson && (
           <Card className="bg-surface-2 border-green-400/25 mb-s-6">
@@ -964,12 +936,6 @@ function useStudentIdentity() {
     pupilName: pupil?.full_name ?? null,
     level:     pupil?.level ?? null,
   };
-}
-
-function NextLessonSkeleton() {
-  return (
-    <div className="bg-surface-2 border border-line-1 rounded-r-4 p-s-9 mb-s-6 h-[200px] animate-pulse" />
-  );
 }
 
 function greeting() {

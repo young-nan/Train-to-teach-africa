@@ -3,6 +3,14 @@
  *
  * Account creation. Defaults to parent role (most volume); schools onboard
  * via a sales-led flow that lands here too but pre-selects 'school_admin'.
+ *
+ * Two post-signup paths:
+ *  1. Email confirmation disabled (dev / Supabase setting off):
+ *     session is returned immediately → wait for profile hydration → redirect.
+ *  2. Email confirmation enabled (production default):
+ *     session is null → show "check your email" screen. User clicks the
+ *     link in the email, lands back on the app, session is established,
+ *     and the auth bootstrap redirects them from the sign-in flow.
  */
 
 import { useEffect, useState } from 'react';
@@ -31,36 +39,82 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('parent');
   const [submitting, setSubmitting] = useState(false);
-  const [signedUp, setSignedUp] = useState(false);
+  // 'idle' | 'awaiting_hydration' | 'confirm_email'
+  const [signupState, setSignupState] = useState('idle');
   const [error, setError] = useState(null);
 
-  // Wait for the profile to hydrate before navigating, otherwise we land
-  // on `/` before the auth store knows what role we are.
+  // Path 1: session returned immediately — wait for profile to hydrate then redirect.
   useEffect(() => {
-    if (!signedUp) return;
+    if (signupState !== 'awaiting_hydration') return;
     if (!isAuthenticated || !userRole) return;
     if (initialPlan) {
       navigate(`/billing/checkout?plan=${initialPlan}`, { replace: true });
     } else {
       navigate(ROLE_HOME[userRole] ?? '/', { replace: true });
     }
-  }, [signedUp, isAuthenticated, userRole, initialPlan, navigate]);
+  }, [signupState, isAuthenticated, userRole, initialPlan, navigate]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      await signUp({ email, password, fullName, role });
-      setSignedUp(true);
-      // Don't clear `submitting` — keep the button spinning while we
-      // wait for hydration in the effect above.
+      const { confirmationRequired } = await signUp({ email, password, fullName, role });
+      if (confirmationRequired) {
+        // Production path: Supabase sent a confirmation email.
+        // Show the check-email screen — no spinner, no hang.
+        setSignupState('confirm_email');
+        setSubmitting(false);
+      } else {
+        // Dev / confirmation-off path: session is live immediately.
+        // Keep the button spinning while auth store hydrates.
+        setSignupState('awaiting_hydration');
+      }
     } catch (err) {
       setError(err.message);
       setSubmitting(false);
     }
   };
 
+  // ── Check-email confirmation screen ─────────────────────────────────────────
+  if (signupState === 'confirm_email') {
+    return (
+      <AuthLayout
+        title="Check your email."
+        subtitle="We've sent a confirmation link to get you started."
+      >
+        <div className="flex flex-col gap-s-5">
+          <div className="bg-surface-2 border border-line-2 rounded-r-2 px-s-5 py-s-5 text-center">
+            <div className="text-[32px] mb-s-3">✉️</div>
+            <p className="text-[15px] text-ink-1 mb-s-2">
+              We sent a link to <span className="text-ink-0 font-medium">{email}</span>.
+            </p>
+            <p className="text-[13px] text-ink-3">
+              Click the link in the email to activate your account. Check your spam folder if you
+              don't see it within a minute.
+            </p>
+          </div>
+          <p className="text-[13px] text-ink-3 text-center">
+            Wrong email?{' '}
+            <button
+              type="button"
+              onClick={() => setSignupState('idle')}
+              className="text-gold-200 hover:text-gold-50 underline"
+            >
+              Go back and try again.
+            </button>
+          </p>
+          <div className="text-center">
+            <Link to="/sign-in" className="text-[13px] text-ink-3 hover:text-ink-1">
+              Already confirmed? Sign in →
+            </Link>
+          </div>
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  // ── Sign-up form ─────────────────────────────────────────────────────────────
   return (
     <AuthLayout
       title="Create your account."

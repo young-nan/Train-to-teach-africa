@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0d0f1a" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <title>Train To Teach Africa — The Operating System for African Education</title>
+    <meta name="description" content="Curriculum-aligned digital learning and school management infrastructure built specifically for African classrooms." />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Train To Teach Africa" />
+    <meta property="og:description" content="The operating system for African education." />
+    <meta property="og:url" content="https://traintoteachafrica.org" />
+    <meta property="og:image" content="https://traintoteachafrica.org/og.jpg" />
+
+    <!-- Font preconnect — saves ~150ms on first paint -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Design System v2 font stack (May 2026):
+        Crimson Text     — editorial display / marketing / report cards
+        Plus Jakarta Sans — product UI headings (dashboard h1/h2/h3)
+        Inter            — body copy
+        JetBrains Mono   — meta, eyebrows, codes, numeric data
+      Space Grotesk removed; JetBrains Mono has better numeric clarity at 11px.
+    -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Plus+Jakarta+Sans:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Plus+Jakarta+Sans:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    />
+  </head>
+  <body class="bg-surface-1 text-ink-1 font-sans antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

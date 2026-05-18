@@ -18,7 +18,6 @@ import { PupilImportView }    from './PupilImportView';
 import { PupilSingleAddView } from './PupilSingleAddView';
 import { PupilPinManager }    from './PupilPinManager';
 import { StaffView }          from './StaffView';
-import { TiersView }          from './TiersView';
 import { CurriculumView }     from './CurriculumView';
 import { TermLocksView }      from './TermLocksView';
 import { ImpactDashboardView } from './ImpactDashboardView';
@@ -60,7 +59,7 @@ export default function AdminApp() {
       <Route path="curriculum"    element={wrap('Curriculum', <CurriculumView />)} />
       <Route path="terms"         element={wrap('Terms', <TermLocksView />)} />
       <Route path="alerts"        element={<AlertsView />} />
-      <Route path="impact"        element={<ImpactDashboardView />} />
+      <Route path="impact"        element={wrap('Impact', <ImpactDashboardView />)} />
       {role === 'school_admin' && (
         <>
           <Route path="billing"                    element={<BillingDashboardView />} />

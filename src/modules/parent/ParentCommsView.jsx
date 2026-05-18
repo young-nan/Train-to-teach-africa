@@ -22,15 +22,9 @@ import * as commsService from '@/services/commsService';
 import * as simsService from '@/services/simsService';
 import { cn } from '@/utils/cn';
 
-const PARENT_NAV = [
-  { to: '/app/parent',           label: 'Tonight',  end: true },
-  { to: '/app/parent/children',  label: 'Children'            },
-  { to: '/app/parent/lessons',   label: 'Lessons'             },
-  { to: '/app/parent/reports',   label: 'Reports'             },
-  { to: '/app/parent/messages',  label: 'Messages'            },
-  { to: '/app/parent/billing',   label: 'Fees'                },
-  { to: '/app/parent/subscribe', label: 'Subscribe'           },
-];
+import { PARENT_NAV as PARENT_NAV_CONST } from './parentNav';
+
+const PARENT_NAV = PARENT_NAV_CONST;
 
 export function ParentCommsView() {
   const [activeChild, setActiveChild] = useState(null);

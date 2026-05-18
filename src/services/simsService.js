@@ -325,3 +325,28 @@ export async function getMyChildren() {
   if (perr) throw new Error(`Could not load children: ${perr.message}`);
   return pupils ?? [];
 }
+
+
+// =============================================================================
+// Attendance export
+// =============================================================================
+
+/**
+ * Fetch all attendance records for a class within a date range.
+ * Returns rows joined to pupil names so the CSV is human-readable.
+ *
+ * Used by the teacher attendance export feature.
+ */
+export async function getAttendanceRange({ classId, fromDate, toDate }) {
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('date, status, note, pupil_id, pupils(full_name, pupil_code)')
+    .eq('class_id', classId)
+    .gte('date', fromDate)
+    .lte('date', toDate)
+    .order('date', { ascending: true })
+    .order('pupils(full_name)', { ascending: true });
+
+  if (error) throw new Error(`Could not load attendance: ${error.message}`);
+  return data ?? [];
+}

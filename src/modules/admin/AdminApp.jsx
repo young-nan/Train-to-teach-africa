@@ -248,8 +248,17 @@ function OverviewView() {
                 <ul className="space-y-s-3">
                   {(alerts ?? []).slice(0, 4).map((a, i) => (
                     <li key={i} className="flex items-start gap-s-3">
-                      <span className={`mt-[6px] w-[6px] h-[6px] rounded-full shrink-0 ${a.severity === 'red' ? 'bg-red-400' : 'bg-amber-400'}`} />
-                      <span className="text-[13.5px] text-ink-1">{a.message}</span>
+                      <span className={`mt-[6px] w-[6px] h-[6px] rounded-full shrink-0 ${
+                        a.severity === 'red'  ? 'bg-red-400'   :
+                        a.severity === 'info' ? 'bg-gold-400'  :
+                                                'bg-amber-400'
+                      }`} />
+                      <span className="text-[13.5px] text-ink-1">
+                        {a.alert_type === 'pending_connection'
+                          ? <Link to="/app/admin/connections" className="hover:text-gold-400">{a.message}</Link>
+                          : a.message
+                        }
+                      </span>
                     </li>
                   ))}
                   {alertCount > 4 && (
@@ -468,20 +477,30 @@ function AlertsView() {
 
         <div className="space-y-s-7">
           {[
+            { key: 'pending_connection',   label: 'Pending parent connection requests', severity: 'info', link: '/app/admin/connections' },
             { key: 'no_attendance_today',  label: 'Classes with no attendance today' },
             { key: 'absence_streak',       label: 'Absence streaks' },
             { key: 'ungraded_assessment',  label: 'Assessments without scores' },
             { key: 'report_stalled',       label: 'Reports stalled in approval', severity: 'red' },
-          ].filter(({ key }) => byType[key]?.length > 0).map(({ key, label, severity='amber' }) => (
+          ].filter(({ key }) => byType[key]?.length > 0).map(({ key, label, severity='amber', link }) => (
             <section key={key}>
               <div className="flex items-center gap-s-3 mb-s-4">
                 <h3 className="font-display text-display-3 text-ink-0">{label}</h3>
-                <Chip variant={severity} dot>{byType[key].length}</Chip>
+                <Chip variant={severity === 'info' ? 'gold' : severity} dot>{byType[key].length}</Chip>
+                {link && (
+                  <Link to={link} className="ml-auto font-mono text-meta text-gold-400 hover:underline">
+                    Review →
+                  </Link>
+                )}
               </div>
               <div className="bg-surface-2 border border-line-2 rounded-r-3 overflow-hidden">
                 {byType[key].map((a,i) => (
                   <div key={i} className="flex items-start gap-s-3 px-s-4 py-s-3 border-b border-line-2 last:border-0">
-                    <span className={`mt-[6px] w-[6px] h-[6px] rounded-full shrink-0 ${severity==='red'?'bg-red-400':'bg-amber-400'}`} />
+                    <span className={`mt-[6px] w-[6px] h-[6px] rounded-full shrink-0 ${
+                      severity === 'red'  ? 'bg-red-400'  :
+                      severity === 'info' ? 'bg-gold-400' :
+                                           'bg-amber-400'
+                    }`} />
                     <span className="text-body text-ink-1">{a.message}</span>
                   </div>
                 ))}

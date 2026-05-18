@@ -117,28 +117,8 @@ export function CurriculumView() {
         )}
       </section>
 
-      {/* v1.1 / v2 surfaces — show the roadmap so admins know what's coming */}
-      <section>
-        <h3 className="font-display text-display-3 text-ink-0 mb-s-4">Coming next</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-s-4">
-          <div className="bg-surface-2 border border-line-1 rounded-r-3 p-s-6 opacity-60">
-            <div className="font-mono text-eyebrow uppercase text-ink-3">Coming in v1.1</div>
-            <h4 className="mt-s-2 font-display text-display-3 text-ink-0">Subject catalog</h4>
-            <p className="mt-s-3 text-[13.5px] text-ink-3">
-              A canonical list of subjects per level. Lets gradebook and reports
-              stay consistent across teachers.
-            </p>
-          </div>
-          <div className="bg-surface-2 border border-line-1 rounded-r-3 p-s-6 opacity-60">
-            <div className="font-mono text-eyebrow uppercase text-ink-3">Coming in v2</div>
-            <h4 className="mt-s-2 font-display text-display-3 text-ink-0">Curriculum syllabi</h4>
-            <p className="mt-s-3 text-[13.5px] text-ink-3">
-              NERDC and Cambridge topic lists per subject per term. For lesson
-              planning and report-card alignment.
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* Subject Catalogue — canonical per-level subject list */}
+      <SubjectCatalogue />
     </div>
   );
 }
@@ -446,5 +426,139 @@ function Skeleton() {
         <div key={i} className="h-[64px] border-b border-line-1 last:border-0 animate-pulse" />
       ))}
     </div>
+  );
+}
+
+/* ─────────────────────────── Subject Catalogue ────────────────────────────── */
+// NERDC-aligned subject list per level group. Admins can see which subjects
+// are expected at each stage. This is the canonical reference that the
+// gradebook subject picker and report card subject list draw from.
+// v1.1: read-only reference. v2 will allow per-school overrides.
+
+const CURRICULUM = [
+  {
+    stage: 'Nursery',
+    levels: ['nursery_1', 'nursery_2'],
+    subjects: [
+      'Literacy',
+      'Numeracy',
+      'Rhymes & Songs',
+      'Social & Emotional Learning',
+      'Creative Arts',
+      'Physical Development',
+    ],
+  },
+  {
+    stage: 'Lower Primary (1–3)',
+    levels: ['primary_1', 'primary_2', 'primary_3'],
+    subjects: [
+      'English Language',
+      'Mathematics',
+      'Basic Science & Technology',
+      'Social Studies',
+      'CRK / IRK',
+      'Cultural & Creative Arts',
+      'Physical & Health Education',
+      'Yoruba / Igbo / Hausa',
+    ],
+  },
+  {
+    stage: 'Upper Primary (4–6)',
+    levels: ['primary_4', 'primary_5', 'primary_6'],
+    subjects: [
+      'English Language',
+      'Mathematics',
+      'Basic Science & Technology',
+      'Social Studies',
+      'CRK / IRK',
+      'Cultural & Creative Arts',
+      'Physical & Health Education',
+      'Civic Education',
+      'Agricultural Science',
+      'Home Economics',
+      'Yoruba / Igbo / Hausa',
+    ],
+  },
+  {
+    stage: 'JSS (1–3)',
+    levels: ['jss_1', 'jss_2', 'jss_3'],
+    subjects: [
+      'English Language',
+      'Mathematics',
+      'Basic Science',
+      'Basic Technology',
+      'Social Studies',
+      'Civic Education',
+      'Cultural & Creative Arts',
+      'CRK / IRK',
+      'Physical & Health Education',
+      'Business Studies',
+      'Agricultural Science',
+      'Home Economics',
+      'French',
+    ],
+  },
+];
+
+function SubjectCatalogue() {
+  const [openStage, setOpenStage] = useState(null);
+
+  return (
+    <section className="mt-s-8">
+      <div className="flex items-center justify-between mb-s-5">
+        <div>
+          <h3 className="font-display text-display-3 text-ink-0">Subject catalogue</h3>
+          <p className="mt-s-2 text-[13.5px] text-ink-3 max-w-[52ch]">
+            NERDC-aligned subjects per stage. Used by the gradebook and report cards
+            to keep subject names consistent across teachers.
+          </p>
+        </div>
+        <Chip variant="gold" size="sm">NERDC</Chip>
+      </div>
+
+      <div className="space-y-s-3">
+        {CURRICULUM.map((stage) => {
+          const isOpen = openStage === stage.stage;
+          return (
+            <div key={stage.stage} className="bg-surface-2 border border-line-1 rounded-r-3 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setOpenStage(isOpen ? null : stage.stage)}
+                className="w-full flex items-center justify-between px-s-5 py-s-4 hover:bg-surface-3 transition-colors text-left"
+              >
+                <div>
+                  <div className="text-[15px] font-medium text-ink-0">{stage.stage}</div>
+                  <div className="font-mono text-[11px] text-ink-3 mt-[2px]">
+                    {stage.levels.map((l) => LEVEL_LABEL[l] ?? l).join(', ')}
+                    <span className="ml-s-3 text-ink-4">· {stage.subjects.length} subjects</span>
+                  </div>
+                </div>
+                <span className={`text-ink-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+                  ▾
+                </span>
+              </button>
+              {isOpen && (
+                <div className="border-t border-line-1 px-s-5 py-s-4">
+                  <div className="flex flex-wrap gap-s-2">
+                    {stage.subjects.map((subject) => (
+                      <span
+                        key={subject}
+                        className="px-s-3 py-[5px] bg-surface-3 border border-line-2 rounded-r-1 text-[13px] text-ink-1"
+                      >
+                        {subject}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="mt-s-4 font-mono text-[11px] text-ink-4">
+                    Subjects follow the NERDC Basic Education Curriculum (2013 revised).
+                    Contact your TTA administrator to request an amendment.
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }

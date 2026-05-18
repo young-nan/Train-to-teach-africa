@@ -30,6 +30,11 @@ export async function signInWithPassword({ email, password }) {
  * Sign up. The actual profile row is created by a Postgres trigger
  * (see migration 0001) — never inside the application. Trigger writes
  * are atomic with auth.users insertion.
+ *
+ * Returns { session, confirmationRequired }.
+ * When Supabase has email confirmation enabled, session is null and
+ * confirmationRequired is true — the UI must show a "check your email" screen.
+ * When confirmation is disabled (dev / magic-link off), session is live.
  */
 export async function signUp({ email, password, fullName, role }) {
   const { data, error } = await supabase.auth.signUp({
@@ -38,7 +43,9 @@ export async function signUp({ email, password, fullName, role }) {
     options: { data: { full_name: fullName, role } },
   });
   if (error) throw mapAuthError(error);
-  return data.session;
+  // session is null when Supabase requires email confirmation before issuing a session.
+  const confirmationRequired = !data.session;
+  return { session: data.session, confirmationRequired };
 }
 
 /**

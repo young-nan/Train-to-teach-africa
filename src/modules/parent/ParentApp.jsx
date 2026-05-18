@@ -21,15 +21,17 @@ import { ChildEnrolmentView } from './ChildEnrolmentView';
 import { ReportCardPrint } from '@/modules/sims/ReportCardPrint';
 import { ParentBillingView } from '@/modules/billing/ParentBillingView';
 import { ParentCommsView } from './ParentCommsView';
+import { WhatsAppOptInView } from './WhatsAppOptInView';
 
 const NAV = [
-  { to: '/app/parent',           label: 'Tonight',  end: true },
-  { to: '/app/parent/children',  label: 'Children'            },
-  { to: '/app/parent/lessons',   label: 'Lessons'             },
-  { to: '/app/parent/reports',   label: 'Reports'             },
-  { to: '/app/parent/messages',  label: 'Messages'            },
-  { to: '/app/parent/billing',   label: 'Fees'                },
-  { to: '/app/parent/subscribe', label: 'Subscribe'           },
+  { to: '/app/parent',           label: 'Tonight',   end: true },
+  { to: '/app/parent/children',  label: 'Children'             },
+  { to: '/app/parent/lessons',   label: 'Lessons'              },
+  { to: '/app/parent/reports',   label: 'Reports'              },
+  { to: '/app/parent/messages',  label: 'Messages'             },
+  { to: '/app/parent/billing',   label: 'Fees'                 },
+  { to: '/app/parent/whatsapp',  label: 'WhatsApp'             },
+  { to: '/app/parent/subscribe', label: 'Subscribe'            },
 ];
 
 export default function ParentApp() {
@@ -43,6 +45,7 @@ export default function ParentApp() {
       <Route path="reports/:pupilId/:term/:year/print" element={<ReportCardPrint />} />
       <Route path="messages"  element={<ParentCommsView />} />
       <Route path="billing"   element={<ParentBillingView />} />
+      <Route path="whatsapp"  element={<WhatsAppShell><WhatsAppOptInView /></WhatsAppShell>} />
       <Route path="subscribe" element={<SubscribeShell><ParentSubscribeView /></SubscribeShell>} />
     </Routes>
   );
@@ -141,6 +144,14 @@ function ReportsShell({ children }) {
 function MessagesShell({ children }) {
   return (
     <AppShell title="Messages" navItems={NAV}>
+      {children}
+    </AppShell>
+  );
+}
+
+function WhatsAppShell({ children }) {
+  return (
+    <AppShell title="WhatsApp" navItems={NAV}>
       {children}
     </AppShell>
   );

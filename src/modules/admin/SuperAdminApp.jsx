@@ -34,12 +34,14 @@ import * as platformService from '@/services/platformService';
 import * as tiersService from '@/services/tiersService';
 import * as tutorService from '@/services/tutorService';
 import { ImpactDashboardView } from './ImpactDashboardView';
+import { LessonContentView }   from './LessonContentView';
 
 const NAV = [
   { to: '/app/super',          label: 'Overview',  end: true },
   { to: '/app/super/schools',  label: 'Schools'  },
   { to: '/app/super/users',    label: 'Users'     },
   { to: '/app/super/tutors',   label: 'Tutors'    },
+  { to: '/app/super/content',  label: 'Content'   },
   { to: '/app/super/tiers',    label: 'Pricing'   },
   { to: '/app/super/revenue',  label: 'Revenue'   },
   { to: '/app/super/impact',   label: 'Impact'    },
@@ -51,7 +53,8 @@ export default function SuperAdminApp() {
       <Route index               element={<PlatformOverview />} />
       <Route path="schools"      element={<SchoolsView />} />
       <Route path="users"        element={<UsersView />} />
-      <Route path="tutors"       element={<TutorsView />} />
+      <Route path="tutors"        element={<TutorsView />} />
+      <Route path="content"      element={<ContentShell />} />
       <Route path="tiers"        element={<TiersShell />} />
       <Route path="revenue"      element={<RevenueView />} />
       <Route path="impact"       element={<ImpactDashboardView />} />
@@ -642,6 +645,16 @@ function TutorsView() {
           )}
         </div>
       </div>
+    </AppShell>
+  );
+}
+
+// ── Content (lesson authoring tool) ──────────────────────────────────────────
+
+function ContentShell() {
+  return (
+    <AppShell title="Lesson Content" navItems={NAV}>
+      <LessonContentView />
     </AppShell>
   );
 }

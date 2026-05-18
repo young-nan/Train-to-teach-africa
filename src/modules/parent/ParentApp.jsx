@@ -25,20 +25,11 @@ import { ReportCardPrint } from '@/modules/sims/ReportCardPrint';
 import { ParentBillingView } from '@/modules/billing/ParentBillingView';
 import { ParentCommsView } from './ParentCommsView';
 import { WhatsAppOptInView } from './WhatsAppOptInView';
+import { ParentLessonLibrary } from './ParentLessonLibrary';
 import * as simsService from '@/services/simsService';
 import { supabase } from '@/lib/supabase';
 
-const NAV = [
-  { to: '/app/parent',                label: 'Tonight',       end: true },
-  { to: '/app/parent/interventions',  label: 'Interventions'            },
-  { to: '/app/parent/children',       label: 'Children'                 },
-  { to: '/app/parent/lessons',        label: 'Lessons'                  },
-  { to: '/app/parent/reports',        label: 'Reports'                  },
-  { to: '/app/parent/messages',       label: 'Messages'                 },
-  { to: '/app/parent/billing',        label: 'Fees'                     },
-  { to: '/app/parent/whatsapp',       label: 'WhatsApp'                 },
-  { to: '/app/parent/subscribe',      label: 'Subscribe'                },
-];
+import { PARENT_NAV as NAV } from './parentNav';
 
 export default function ParentApp() {
   return (
@@ -46,6 +37,7 @@ export default function ParentApp() {
       <Route index element={<TonightView />} />
       <Route path="interventions" element={<InterventionsView />} />
       <Route path="children" element={<ChildrenShell><ChildEnrolmentView /></ChildrenShell>} />
+      <Route path="lessons" element={<LessonsShell><ParentLessonLibrary /></LessonsShell>} />
       <Route path="lessons/:lessonId/print" element={<LessonPrintView />} />
       <Route path="lessons/:lessonId" element={<LessonShell><LessonReaderView /></LessonShell>} />
       <Route path="reports" element={<ReportsShell><ParentReportsView /></ReportsShell>} />
@@ -477,6 +469,10 @@ function SubscribeShell({ children }) {
       {children}
     </AppShell>
   );
+}
+
+function LessonsShell({ children }) {
+  return <AppShell title="Lessons" navItems={NAV}>{children}</AppShell>;
 }
 
 function LessonShell({ children }) {

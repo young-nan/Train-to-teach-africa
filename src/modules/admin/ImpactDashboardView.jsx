@@ -22,50 +22,39 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, KpiCard } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
-import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/hooks/useAuth';
 import * as impactService from '@/services/impactService';
 
-const ADMIN_NAV = [
-  { to: '/app/admin',            label: 'Overview', end: true },
-  { to: '/app/admin/enrollments',label: 'Enrolments' },
-  { to: '/app/admin/staff',      label: 'Staff' },
-  { to: '/app/admin/curriculum', label: 'Curriculum' },
-  { to: '/app/admin/terms',      label: 'Terms' },
-  { to: '/app/admin/tiers',      label: 'Tiers' },
-  { to: '/app/admin/impact',     label: 'Impact' },
-  { to: '/app/admin/billing',    label: 'Billing' },
-];
-
 // ── Root ──────────────────────────────────────────────────────────────────────
+// ImpactDashboardView renders its content only — the AppShell wrapper is
+// provided by the parent (AdminApp wraps it, SuperAdminApp wraps it).
+// This avoids double-wrapping and nav bleed.
 
 export function ImpactDashboardView() {
   const { schoolId, schoolName, role } = useAuth();
   const isSuperAdmin = role === 'super_admin';
 
   return (
-    <AppShell title="Impact Dashboard" navItems={ADMIN_NAV}>
-      <div className="max-w-[980px]">
-        <div className="mb-s-7">
-          <div className="font-mono text-eyebrow uppercase text-gold-400">
-            {isSuperAdmin ? 'TTA Network' : schoolName}
-          </div>
-          <h2 className="mt-s-3 font-display text-display-2 text-ink-0">
-            Impact &amp; outcomes.
-          </h2>
-          <p className="mt-s-3 text-body text-ink-2 max-w-[62ch]">
-            {isSuperAdmin
-              ? 'Network-wide metrics across all TTA schools. Use these to demonstrate educational outcomes to funders and NGOs.'
-              : 'Your school\'s measurable outcomes. Export a grant-ready report in one click.'}
-          </p>
+    <div className="max-w-[980px]">
+      <div className="mb-s-7">
+        <div className="font-mono text-eyebrow uppercase text-gold-400">
+          {isSuperAdmin ? 'TTA Network' : schoolName}
         </div>
-
-        {isSuperAdmin
-          ? <SuperAdminImpact />
-          : <SchoolAdminImpact schoolId={schoolId} schoolName={schoolName} />
-        }
+        <h2 className="mt-s-3 font-display text-display-2 text-ink-0">
+          Impact &amp; outcomes.
+        </h2>
+        <p className="mt-s-3 text-body text-ink-2 max-w-[62ch]">
+          {isSuperAdmin
+            ? 'Network-wide metrics across all TTA schools. Use these to demonstrate educational outcomes to funders and NGOs.'
+            : 'Your school\'s measurable outcomes. Export a grant-ready report in one click.'}
+        </p>
       </div>
-    </AppShell>
+
+      {isSuperAdmin
+        ? <SuperAdminImpact />
+        : <SchoolAdminImpact schoolId={schoolId} schoolName={schoolName} />
+      }
+    </div>
   );
 }
 

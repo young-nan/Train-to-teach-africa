@@ -278,6 +278,9 @@ function PupilCommsPanel({ pupil, schoolId, classId }) {
     onSuccess: (url) => {
       invalidate();
       window.open(url, '_blank', 'noopener,noreferrer');
+      // Persist the phone number to the parent's profile (silently, background)
+      // so teachers don't have to retype it next time.
+      commsService.saveParentPhoneForPupil(pupil.id, waPhone).catch(() => {});
       setShowWaForm(false);
       setWaPhone('');
       setWaMsg('');
@@ -316,11 +319,23 @@ function PupilCommsPanel({ pupil, schoolId, classId }) {
           <Button
             intent={showWaForm ? 'ghost' : 'primary'}
             size="sm"
-            onClick={() => {
+            onClick={async () => {
               setShowWaForm((v) => !v);
-              // Pre-fill a generic opener
               if (!showWaForm) {
                 setWaMsg(`Hello, this is ${pupil.full_name?.split(' ')[0]}'s class teacher. I'd like to briefly discuss their progress. When would be a good time to talk?`);
+                // Try to pre-fill phone from linked parent's profile
+                if (!waPhone) {
+                  try {
+                    const { supabase } = await import('@/lib/supabase');
+                    const { data: links } = await supabase
+                      .from('parent_pupil_links')
+                      .select('profiles!parent_user_id(phone)')
+                      .eq('pupil_id', pupil.id)
+                      .limit(1);
+                    const phone = links?.[0]?.profiles?.phone;
+                    if (phone) setWaPhone(phone);
+                  } catch { /* silently skip */ }
+                }
               }
             }}
           >

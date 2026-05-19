@@ -24,6 +24,7 @@ import { ImpactDashboardView } from './ImpactDashboardView';
 import { ConnectionsView }     from './ConnectionsView';
 import { SchoolSettingsView }  from './SchoolSettingsView';
 import { SchoolInterventionsView } from './SchoolInterventionsView';
+import { SchoolCommsView }     from './SchoolCommsView';
 import { BillingDashboardView } from '@/modules/billing/BillingDashboardView';
 import { InvoiceEditorView }    from '@/modules/billing/InvoiceEditorView';
 import { BulkInvoiceView }      from '@/modules/billing/BulkInvoiceView';
@@ -32,6 +33,7 @@ import { InvoicePrintView }     from '@/modules/billing/InvoicePrintView';
 const BASE_NAV = [
   { to: '/app/admin',                label: 'Overview',       end: true },
   { to: '/app/admin/interventions',  label: 'Interventions'             },
+  { to: '/app/admin/comms',          label: 'Comms'                     },
   { to: '/app/admin/enrollments',    label: 'Enrolments'                },
   { to: '/app/admin/staff',          label: 'Staff'                     },
   { to: '/app/admin/connections',    label: 'Connections'               },
@@ -56,6 +58,7 @@ export default function AdminApp() {
     <Routes>
       <Route index                element={<OverviewView />} />
       <Route path="interventions" element={wrap('Interventions', <SchoolInterventionsView />)} />
+      <Route path="comms"         element={wrap('Comms', <SchoolCommsView />)} />
       <Route path="enrollments"   element={wrap('Enrolments', <EnrollmentsView />)} />
       <Route path="pupils/import" element={wrap('Import pupils', <PupilImportView />)} />
       <Route path="pupils/add"    element={wrap('Add pupil', <PupilSingleAddView />)} />

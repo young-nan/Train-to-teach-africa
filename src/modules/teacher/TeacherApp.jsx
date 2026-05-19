@@ -30,17 +30,20 @@ import { Button } from '@/components/ui/Button';
 import { QuickActionCard, QuickActionGrid } from '@/components/ui/QuickActionCard';
 import { useAuth } from '@/hooks/useAuth';
 import { useAttendance } from '@/hooks/useAttendance';
+import { SchoolInterventionsView } from '@/modules/admin/SchoolInterventionsView';
 import * as simsService from '@/services/simsService';
 import * as reportsService from '@/services/reportsService';
 import { supabase } from '@/lib/supabase';
 import { CommsView } from '@/modules/sims/CommsView';
 
 const NAV = [
-  { to: '/app/teacher',             label: 'Dashboard',  end: true },
-  { to: '/app/teacher/attendance',  label: 'Attendance'  },
-  { to: '/app/teacher/gradebook',   label: 'Gradebook'   },
-  { to: '/app/teacher/reports',     label: 'Reports'     },
-  { to: '/app/teacher/comms',       label: 'Comms'       },
+  { to: '/app/teacher',                  label: 'Dashboard',     end: true },
+  { to: '/app/teacher/attendance',       label: 'Attendance'               },
+  { to: '/app/teacher/gradebook',        label: 'Gradebook'                },
+  { to: '/app/teacher/reports',          label: 'Reports'                  },
+  { to: '/app/teacher/comms',            label: 'Comms'                    },
+  { to: '/app/teacher/interventions',    label: 'Interventions'            },
+];
 ];
 
 // ── Router ────────────────────────────────────────────────────────────────────
@@ -54,6 +57,11 @@ export default function TeacherApp() {
       <Route path="gradebook"        element={<GradebookHub />} />
       <Route path="reports"          element={<ReportsHub />} />
       <Route path="comms"            element={<CommsView />} />
+      <Route path="interventions"    element={
+        <AppShell title="Interventions" navItems={NAV}>
+          <SchoolInterventionsView />
+        </AppShell>
+      } />
     </Routes>
   );
 }

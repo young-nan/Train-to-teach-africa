@@ -69,11 +69,11 @@ export function hasCapability(role, capability) {
  * tutor        → /app/tutor
  */
 export const ROLE_HOME = Object.freeze({
-  [ROLES.SUPER_ADMIN]:  '/app/super',    // ← was /app/admin, now /app/super
+  [ROLES.SUPER_ADMIN]:  '/app/super',
   [ROLES.SCHOOL_ADMIN]: '/app/admin',
-  [ROLES.HEAD_TEACHER]: '/app/teacher',  // ← was /app/admin
+  [ROLES.HEAD_TEACHER]: '/app/admin',   // head teacher sees admin overview first
   [ROLES.TEACHER]:      '/app/teacher',
   [ROLES.PARENT]:       '/app/parent',
   [ROLES.STUDENT]:      '/app/student',
-  [ROLES.TUTOR]:        '/app/tutor',    // ← new
+  [ROLES.TUTOR]:        '/app/tutor',
 });

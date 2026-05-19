@@ -41,12 +41,13 @@
  * To give a surface custom icons, add an entry to NAV_ICONS below.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { SyncPill } from '@/components/ui/SyncPill';
 import { Mark, Wordmark } from '@/components/brand';
 import { cn } from '@/utils/cn';
+import { supabase } from '@/lib/supabase';
 
 // ── Inline SVG icons ──────────────────────────────────────────────────────────
 // 20×20 viewBox, 1.5px stroke, rounded caps/joins.
@@ -386,6 +387,8 @@ export function AppShell({ navItems = [], children, title }) {
             <h1 className="font-heading text-[17px] lg:text-[20px] font-semibold text-ink-0">{title}</h1>
             <div className="flex items-center gap-s-3 lg:gap-s-4">
               <SyncPill />
+              {/* Alert bell — school_admin and head_teacher only */}
+              <AlertBell role={profile?.role} schoolId={profile?.school_id} />
               {/* Profile avatar — top right, always links to account settings */}
               <Link
                 to="/account"
@@ -556,6 +559,67 @@ function MoreSheetItem({ item, onClose }) {
       {getIcon(item.label)}
       <span className="font-mono text-[10px] tracking-[0.06em] leading-tight">{item.label}</span>
     </NavLink>
+  );
+}
+
+// ── Alert bell ────────────────────────────────────────────────────────────────
+// Shows a live alert count for school staff. Polls every 60 seconds.
+// Only rendered for school_admin and head_teacher — other roles have no alerts.
+
+const STAFF_ROLES = new Set(['school_admin', 'head_teacher']);
+
+function AlertBell({ role, schoolId }) {
+  const [count, setCount] = useState(0);
+
+  const fetchCount = useCallback(async () => {
+    if (!schoolId || !STAFF_ROLES.has(role)) return;
+    try {
+      const { count: cnt, error } = await supabase
+        .from('school_alerts_v')
+        .select('*', { count: 'exact', head: true });
+      if (!error && cnt != null) setCount(cnt);
+    } catch { /* silent — alert bell is non-critical */ }
+  }, [role, schoolId]);
+
+  useEffect(() => {
+    fetchCount();
+    const interval = setInterval(fetchCount, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchCount]);
+
+  if (!STAFF_ROLES.has(role)) return null;
+
+  return (
+    <Link
+      to="/app/admin/alerts"
+      className="relative flex items-center justify-center w-[36px] h-[36px] rounded-r-2 text-ink-3 hover:text-ink-0 hover:bg-surface-3 transition-all"
+      title={count > 0 ? `${count} alert${count !== 1 ? 's' : ''}` : 'No alerts'}
+      aria-label={`Alerts${count > 0 ? ` (${count})` : ''}`}
+    >
+      {/* Bell icon */}
+      <svg viewBox="0 0 20 20" fill="none" className="w-[18px] h-[18px]" aria-hidden="true">
+        <path
+          d="M10 3a5 5 0 0 0-5 5v3l-1.5 2.5h13L15 11V8a5 5 0 0 0-5-5Z"
+          stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"
+        />
+        <path
+          d="M8.5 16.5a1.5 1.5 0 0 0 3 0"
+          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
+        />
+      </svg>
+      {/* Count badge */}
+      {count > 0 && (
+        <span
+          className={cn(
+            'absolute -top-[3px] -right-[3px] min-w-[16px] h-[16px] px-[4px]',
+            'rounded-full text-[9px] font-bold font-mono leading-[16px] text-center',
+            'bg-red-500 text-white',
+          )}
+        >
+          {count > 99 ? '99+' : count}
+        </span>
+      )}
+    </Link>
   );
 }
 

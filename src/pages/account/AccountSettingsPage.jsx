@@ -155,6 +155,22 @@ export default function AccountSettingsPage() {
             </div>
 
             <div className="space-y-s-4">
+              {/* Email — read-only; Supabase requires OTP to change */}
+              <div className="flex flex-col gap-s-2">
+                <span className="font-mono text-meta uppercase tracking-[0.14em] text-ink-3">
+                  Email address
+                </span>
+                <div className="flex items-center gap-s-3">
+                  <div className="flex-1 bg-surface-3 border border-line-1 rounded-r-2 px-s-4 py-s-3 text-[14px] text-ink-2 font-mono">
+                    {profile?.email}
+                  </div>
+                  <Chip variant="default" size="sm">Read-only</Chip>
+                </div>
+                <p className="font-mono text-[11px] text-ink-3">
+                  To change your email, sign in via the new address — Supabase
+                  will send a confirmation link to both addresses.
+                </p>
+              </div>
               <Field
                 label="Full name"
                 type="text"

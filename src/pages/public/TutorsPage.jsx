@@ -62,7 +62,7 @@ function Hero() {
         aria-hidden="true"
       />
       <div className="relative max-w-[1280px] mx-auto px-s-6 lg:px-s-9 py-s-10">
-        <Chip variant="gold" dot>TTA Tutor Network · Coming soon</Chip>
+        <Chip variant="green" dot>TTA Tutor Network · Now open</Chip>
         <h1 className="mt-s-5 font-display text-display-1 text-ink-0 max-w-[20ch]">
           Trusted tutors for <span className="ital-gold">African families.</span>
         </h1>
@@ -73,15 +73,15 @@ function Hero() {
           handling, and platform verification.
         </p>
         <p className="mt-s-4 text-body text-ink-3 max-w-[64ch]">
-          Sign up to be one of the first tutors on the network when we open
-          onboarding.
+          Join Nigeria's growing network of qualified tutors. Set your own rate,
+          teach online or in-person, and get paid through Paystack.
         </p>
         <div className="mt-s-7 flex flex-wrap gap-s-3">
-          <a href="#join">
-            <Button intent="primary" size="lg">Join as a Tutor</Button>
-          </a>
-          <Link to="/about">
-            <Button intent="ghost" size="lg">About TTA →</Button>
+          <Link to="/sign-up?role=tutor">
+            <Button intent="primary" size="lg">Apply as a Tutor</Button>
+          </Link>
+          <Link to="/sign-in">
+            <Button intent="ghost" size="lg">Already a tutor? Sign in →</Button>
           </Link>
         </div>
       </div>
@@ -202,12 +202,16 @@ function LeadForm() {
               You're on the list.
             </h2>
             <p className="mt-s-4 text-body text-ink-2">
-              We'll email you the moment the tutor marketplace opens —
-              expected first half of {new Date().getFullYear() + (new Date().getMonth() > 5 ? 1 : 0)}.
-              In the meantime, watch your inbox for early-tutor briefings.
+              We'll reach out soon. Want to get started right away?
+              Create your tutor account now — it only takes a minute.
             </p>
-            <div className="mt-s-7">
-              <Link to="/"><Button intent="ghost" size="md">← Back to home</Button></Link>
+            <div className="mt-s-7 flex flex-wrap gap-s-3 justify-center">
+              <Link to="/sign-up?role=tutor">
+                <Button intent="primary" size="md">Apply now →</Button>
+              </Link>
+              <Link to="/">
+                <Button intent="ghost" size="md">← Back to home</Button>
+              </Link>
             </div>
           </Card>
         </div>
@@ -218,11 +222,32 @@ function LeadForm() {
   return (
     <section id="join" className="py-s-10">
       <div className="max-w-[680px] mx-auto px-s-6 lg:px-s-9">
-        <h2 className="font-display text-display-2 text-ink-0 mb-s-3">
-          Join the network.
-        </h2>
+        {/* Primary CTA — fastest path */}
+        <div className="bg-gold-400/10 border border-gold-400/25 rounded-r-3 p-s-7 mb-s-8 text-center">
+          <h2 className="font-display text-display-2 text-ink-0 mb-s-3">
+            Ready to apply?
+          </h2>
+          <p className="text-body text-ink-2 mb-s-5">
+            Create your account in under a minute. Complete your tutor profile
+            and our team will review it within 2 business days.
+          </p>
+          <Link to="/sign-up?role=tutor" className="inline-block">
+            <Button intent="primary" size="lg">Apply as a Tutor →</Button>
+          </Link>
+        </div>
+
+        {/* Divider */}
+        <div className="flex items-center gap-s-4 mb-s-8">
+          <div className="flex-1 h-px bg-line-2" />
+          <span className="font-mono text-meta text-ink-4">or leave your details</span>
+          <div className="flex-1 h-px bg-line-2" />
+        </div>
+
+        <h3 className="font-display text-display-3 text-ink-0 mb-s-3">
+          Not ready to sign up yet?
+        </h3>
         <p className="text-body text-ink-2 mb-s-7">
-          Tell us about yourself. We'll be in touch when we open onboarding.
+          Leave your details and we'll reach out when the time is right.
           Required fields are marked with an asterisk.
         </p>
 

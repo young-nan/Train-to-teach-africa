@@ -28,12 +28,14 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import * as profileService from '@/services/profileService';
+import * as consentService from '@/services/consentService';
 import { ROLE_HOME } from '@/config/roles';
 import { friendlyError } from '@/utils/friendlyError';
 
@@ -280,8 +282,77 @@ export default function AccountSettingsPage() {
             </Card>
           )}
 
+          {/* ── Privacy & Consent ─────────────────────────────────────────── */}
+          <section>
+            <h2 className="font-display text-display-3 text-ink-0 mb-s-5">Privacy &amp; consent</h2>
+            <PrivacyConsent />
+          </section>
+
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Privacy consent panel ─────────────────────────────────────────────────────
+
+function PrivacyConsent() {
+  const qc = useQueryClient();
+
+  const { data: consents, isLoading } = useQuery({
+    queryKey: ['account', 'consents'],
+    queryFn:  () => consentService.getMyConsents(),
+    staleTime: 60_000,
+  });
+
+  const toggle = useMutation({
+    mutationFn: ({ type, granted }) => consentService.setMyConsent(type, granted),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['account', 'consents'] }),
+  });
+
+  if (isLoading) {
+    return <div className="space-y-s-3">{[1,2,3].map(i=><div key={i} className="h-[64px] bg-surface-2 border border-line-1 rounded-r-2 animate-pulse"/>)}</div>;
+  }
+
+  return (
+    <div className="space-y-s-3">
+      {consentService.USER_CONSENT_TYPES.map((type) => {
+        const meta    = consentService.CONSENT_META[type];
+        const granted = consents?.[type] ?? false;
+        return (
+          <Card key={type} className="bg-surface-2 border-line-2">
+            <div className="flex items-start gap-s-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-s-2 mb-s-1">
+                  <span className="text-[14px] font-medium text-ink-0">{meta.label}</span>
+                  {meta.required && <Chip variant="gold" size="sm">Required</Chip>}
+                </div>
+                <p className="text-[13px] text-ink-3">{meta.body}</p>
+              </div>
+              <div className="shrink-0 mt-[2px]">
+                {meta.required ? (
+                  <span className="font-mono text-[12px] text-green-400">✓ Always on</span>
+                ) : (
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={granted}
+                      onChange={(e) => toggle.mutate({ type, granted: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-[40px] h-[22px] bg-surface-3 peer-checked:bg-gold-400/60 rounded-full peer-focus:ring-2 peer-focus:ring-gold-400/30 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-[18px] after:w-[18px] after:transition-all peer-checked:after:translate-x-[18px]" />
+                  </label>
+                )}
+              </div>
+            </div>
+          </Card>
+        );
+      })}
+      <p className="font-mono text-[11px] text-ink-4 mt-s-2">
+        All consent changes are logged. Read our{' '}
+        <a href="/privacy" className="text-gold-200 hover:text-gold-50">Privacy Policy</a>{' '}
+        to understand how each type of data is used.
+      </p>
     </div>
   );
 }

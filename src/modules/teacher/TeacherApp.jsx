@@ -44,7 +44,6 @@ const NAV = [
   { to: '/app/teacher/comms',            label: 'Comms'                    },
   { to: '/app/teacher/interventions',    label: 'Interventions'            },
 ];
-];
 
 // ── Router ────────────────────────────────────────────────────────────────────
 

@@ -507,17 +507,7 @@ function ConnectionSummaryCard({ connection, onUpdate }) {
             >
               Edit sharing
             </button>
-            <button
-              onClick={() => {
-                if (window.confirm('Revoke this connection? The parent will lose access to school data.')) {
-                  revoke.mutate();
-                }
-              }}
-              className="font-mono text-meta text-red-400 hover:text-red-300 text-right"
-              disabled={revoke.isPending}
-            >
-              {revoke.isPending ? 'Revoking…' : 'Revoke'}
-            </button>
+            <RevokeButton onRevoke={() => revoke.mutate()} isPending={revoke.isPending} />
           </div>
         )}
       </div>
@@ -528,5 +518,32 @@ function ConnectionSummaryCard({ connection, onUpdate }) {
         </div>
       )}
     </Card>
+  );
+}
+
+function RevokeButton({ onRevoke, isPending }) {
+  const [confirm, setConfirm] = useState(false);
+  if (confirm) {
+    return (
+      <span className="flex items-center gap-s-2 font-mono text-meta">
+        <span className="text-red-400">Revoke?</span>
+        <button
+          onClick={() => { onRevoke(); setConfirm(false); }}
+          className="text-red-400 hover:text-red-300 font-medium"
+          disabled={isPending}
+        >
+          {isPending ? 'Revoking…' : 'Yes'}
+        </button>
+        <button onClick={() => setConfirm(false)} className="text-ink-3 hover:text-ink-1">No</button>
+      </span>
+    );
+  }
+  return (
+    <button
+      onClick={() => setConfirm(true)}
+      className="font-mono text-meta text-red-400 hover:text-red-300 text-right"
+    >
+      Revoke
+    </button>
   );
 }

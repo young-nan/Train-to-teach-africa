@@ -107,8 +107,9 @@ function OverviewView() {
   const attendanceDeltaDir = attendancePct == null ? 'flat'
     : attendancePct >= 90 ? 'up' : attendancePct >= 75 ? 'flat' : 'down';
 
-  // Action urgency
-  const attendanceUrgent = attendancePct != null && attendancePct < 90;
+  // Action urgency — use per-school threshold from settings
+  const riskThreshold   = parseInt(localStorage.getItem(`tta:risk:${schoolId}`) ?? '80', 10);
+  const attendanceUrgent = attendancePct != null && attendancePct < riskThreshold;
   const alertsUrgent     = alertCount > 0;
 
   return (
@@ -234,7 +235,7 @@ function OverviewView() {
                 <div className="font-mono text-meta text-ink-3 mt-s-1">avg this period</div>
               </div>
             </div>
-            <AttendanceSparkline data={trend} />
+            <AttendanceSparkline data={trend} threshold={parseInt(localStorage.getItem(`tta:risk:${schoolId}`) ?? '80', 10)} />
             <div className="mt-s-4 flex justify-between font-mono text-[11px] text-ink-3">
               <span>{trend[0]?.trend_date ? fmtDay(trend[0].trend_date) : ''}</span>
               <span>{trend[trend.length - 1]?.trend_date ? fmtDay(trend[trend.length - 1].trend_date) : ''}</span>
@@ -317,7 +318,7 @@ function OverviewView() {
 
 // ── Attendance sparkline ──────────────────────────────────────────────────────
 
-function AttendanceSparkline({ data }) {
+function AttendanceSparkline({ data, threshold = 80 }) {
   if (!data?.length) return null;
 
   const W = 600, H = 72, PAD_X = 0, PAD_Y = 4;
@@ -342,8 +343,7 @@ function AttendanceSparkline({ data }) {
     `L ${PAD_X} ${H} Z`,
   ].join(' ');
 
-  // 90% threshold line
-  const thresholdY = toY(90);
+  const thresholdY = toY(threshold);
 
   return (
     <svg
@@ -359,7 +359,7 @@ function AttendanceSparkline({ data }) {
         </linearGradient>
       </defs>
 
-      {/* 90% target line */}
+      {/* Threshold target line */}
       <line
         x1={PAD_X} y1={thresholdY}
         x2={W - PAD_X} y2={thresholdY}
@@ -375,7 +375,7 @@ function AttendanceSparkline({ data }) {
         fontSize="9"
         fill="rgba(255,255,255,0.3)"
       >
-        90%
+        {threshold}%
       </text>
 
       {/* Area fill */}
@@ -575,7 +575,17 @@ async function fetchAlerts(schoolId) {
   return data ?? [];
 }
 async function fetchAtRisk(schoolId) {
-  const { data, error } = await supabase.rpc('get_at_risk_pupils', { p_school_id: schoolId, p_days: 14, p_min_absences: 3 });
+  // Use the per-school threshold set in SchoolSettingsView (default 80%)
+  const threshold = parseInt(localStorage.getItem(`tta:risk:${schoolId}`) ?? '80', 10);
+  // Convert attendance % threshold to minimum absences over 14 days:
+  // if threshold is 80% and there are 14 days, a pupil needs > (1 - 0.80) * 14 = 2.8 absences
+  // so we use 3 as the minimum for an 80% threshold, scaling down for stricter thresholds
+  const minAbsences = Math.max(1, Math.round((1 - threshold / 100) * 14));
+  const { data, error } = await supabase.rpc('get_at_risk_pupils', {
+    p_school_id:   schoolId,
+    p_days:        14,
+    p_min_absences: minAbsences,
+  });
   if (error) { console.warn('[at-risk]', error.message); return []; }
   return data ?? [];
 }

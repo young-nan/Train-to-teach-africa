@@ -26,6 +26,7 @@ import { ParentBillingView } from '@/modules/billing/ParentBillingView';
 import { ParentCommsView } from './ParentCommsView';
 import { WhatsAppOptInView } from './WhatsAppOptInView';
 import { ParentLessonLibrary } from './ParentLessonLibrary';
+import { ParentTutorSearchView } from '@/modules/marketplace/ParentTutorSearchView';
 import * as simsService from '@/services/simsService';
 import { supabase } from '@/lib/supabase';
 
@@ -42,6 +43,7 @@ export default function ParentApp() {
       <Route path="lessons/:lessonId" element={<LessonShell><LessonReaderView /></LessonShell>} />
       <Route path="reports" element={<ReportsShell><ParentReportsView /></ReportsShell>} />
       <Route path="reports/:pupilId/:term/:year/print" element={<ReportCardPrint />} />
+      <Route path="tutors"    element={<ParentTutorSearchView />} />
       <Route path="messages"  element={<ParentCommsView />} />
       <Route path="billing"   element={<ParentBillingView />} />
       <Route path="whatsapp"  element={<WhatsAppShell><WhatsAppOptInView /></WhatsAppShell>} />

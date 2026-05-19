@@ -61,7 +61,7 @@ export function ReportEditor() {
     if (!data) return;
     setOverallComment(data.overall_comment?.comment ?? '');
     setConduct(data.conduct ?? {});
-  }, [pupilId, term, yearNum]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pupilId, term, yearNum]);
 
   // Ensure a draft envelope exists as soon as the editor opens
   useEffect(() => {
@@ -71,7 +71,7 @@ export function ReportEditor() {
         pupilId, classId: data.class.id, schoolId: data.school.id, term, year: yearNum,
       }).then(() => qc.invalidateQueries({ queryKey })).catch(console.error);
     }
-  }, [data?.report_envelope, data?.school?.id, data?.class?.id, pupilId, classId, term, yearNum]); // eslint-disable-line
+  }, [data?.report_envelope, data?.school?.id, data?.class?.id, pupilId, classId, term, yearNum]);
 
   // ---- Auto-save: overall comment -----------------------------------------
   const overallAutoSave = useDebouncedAutoSave({

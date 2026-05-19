@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import * as staffService from '@/services/staffService';
 import * as pupilImportService from '@/services/pupilImportService';
+import { supabase } from '@/lib/supabase';
 import { cn } from '@/utils/cn';
 
 const ROLE_LABEL = {
@@ -48,11 +49,27 @@ export function StaffView() {
   const allowedRoles = ROLES_BY_CALLER[callerRole] ?? [];
   const canInvite = allowedRoles.length > 0;
 
+  const [tab, setTab] = useState('staff'); // 'staff' | 'pupils'
   const qc = useQueryClient();
   const { data: staff, isLoading, error } = useQuery({
     queryKey: ['admin', 'staff', schoolId],
     queryFn: () => staffService.listStaff({ schoolId }),
-    enabled: !!schoolId,
+    enabled: !!schoolId && tab === 'staff',
+    staleTime: 60_000,
+  });
+
+  const { data: pupils, isLoading: pupilsLoading } = useQuery({
+    queryKey: ['admin', 'pupils', schoolId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pupils')
+        .select('id, full_name, pupil_code, level, pin_hash, classes(name)')
+        .eq('school_id', schoolId)
+        .order('full_name');
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    },
+    enabled: !!schoolId && tab === 'pupils',
     staleTime: 60_000,
   });
 
@@ -60,59 +77,144 @@ export function StaffView() {
 
   return (
     <div className="max-w-[820px]">
-      <div className="mb-s-7 flex items-end justify-between gap-s-4 flex-wrap">
+      <div className="mb-s-6 flex items-end justify-between gap-s-4 flex-wrap">
         <div>
-          <div className="font-mono text-eyebrow uppercase text-gold-400">Staff</div>
+          <div className="font-mono text-eyebrow uppercase text-gold-400">School users</div>
           <h2 className="mt-s-3 font-display text-display-2 text-ink-0">
-            Teachers and administrators.
+            Staff &amp; students.
           </h2>
-          <p className="mt-s-3 text-body text-ink-2 max-w-[58ch]">
-            Everyone with a staff account at your school. Invite new staff
-            to give them access to attendance, gradebook, and reports.
-          </p>
         </div>
-        {canInvite && (
-          <Button
-            intent="primary"
-            size="md"
-            onClick={() => setInviteOpen((v) => !v)}
-          >
+        {tab === 'staff' && canInvite && (
+          <Button intent="primary" size="md" onClick={() => setInviteOpen((v) => !v)}>
             {inviteOpen ? 'Close' : '+ Invite staff'}
           </Button>
         )}
+        {tab === 'pupils' && (
+          <Link to="/app/admin/pupils/pins">
+            <Button intent="ghost" size="sm">Manage PINs →</Button>
+          </Link>
+        )}
       </div>
 
-      {inviteOpen && canInvite && (
-        <InviteStaffCard
-          allowedRoles={allowedRoles}
-          schoolId={schoolId}
-          onDone={() => {
-            setInviteOpen(false);
-            qc.invalidateQueries({ queryKey: ['admin', 'staff', schoolId] });
-          }}
-        />
+      {/* Tab switcher */}
+      <div className="flex gap-s-1 bg-surface-2 border border-line-2 rounded-r-2 p-[3px] w-fit mb-s-6">
+        {[
+          { id: 'staff',  label: 'Staff' },
+          { id: 'pupils', label: 'Student profiles' },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => { setTab(t.id); setInviteOpen(false); }}
+            className={cn(
+              'px-s-5 py-[6px] rounded-[6px] text-[13px] font-medium transition-all duration-150',
+              tab === t.id
+                ? 'bg-surface-4 text-ink-0 shadow-sm'
+                : 'text-ink-3 hover:text-ink-1',
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Staff tab ──────────────────────────────────────────────────── */}
+      {tab === 'staff' && (
+        <>
+          {inviteOpen && canInvite && (
+            <InviteStaffCard
+              allowedRoles={allowedRoles}
+              schoolId={schoolId}
+              onDone={() => {
+                setInviteOpen(false);
+                qc.invalidateQueries({ queryKey: ['admin', 'staff', schoolId] });
+              }}
+            />
+          )}
+
+          {isLoading && <Skeleton />}
+          {error && (
+            <Card className="border-red-400/30 bg-red-400/[0.04]">
+              <div className="text-red-400">{error.message}</div>
+            </Card>
+          )}
+          {staff && staff.length === 0 && (
+            <Card>
+              <div className="font-display text-display-3 text-ink-0">No staff yet.</div>
+              <p className="mt-s-3 text-body text-ink-2">
+                Invite your first teacher to get started.
+              </p>
+            </Card>
+          )}
+          {staff && staff.length > 0 && (
+            <div className="bg-surface-2 border border-line-1 rounded-r-3 overflow-hidden">
+              {staff.map((s) => (
+                <StaffRow key={s.user_id} staff={s} />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
-      {isLoading && <Skeleton />}
-      {error && (
-        <Card className="border-red-400/30 bg-red-400/[0.04]">
-          <div className="text-red-400">{error.message}</div>
-        </Card>
-      )}
-      {staff && staff.length === 0 && (
-        <Card>
-          <div className="font-display text-display-3 text-ink-0">No staff yet.</div>
-          <p className="mt-s-3 text-body text-ink-2">
-            Invite your first teacher to get started.
-          </p>
-        </Card>
-      )}
-      {staff && staff.length > 0 && (
-        <div className="bg-surface-2 border border-line-1 rounded-r-3 overflow-hidden">
-          {staff.map((s) => (
-            <StaffRow key={s.user_id} staff={s} />
-          ))}
-        </div>
+      {/* ── Student profiles tab ────────────────────────────────────────── */}
+      {tab === 'pupils' && (
+        <>
+          {pupilsLoading && <Skeleton />}
+          {pupils && pupils.length === 0 && (
+            <Card>
+              <div className="font-display text-display-3 text-ink-0">No pupils yet.</div>
+              <p className="mt-s-3 text-body text-ink-2">
+                Import pupils or add them one-at-a-time from the Enrolments section.
+              </p>
+              <Link to="/app/admin/enrollments" className="mt-s-4 inline-block">
+                <Button intent="ghost" size="sm">Go to Enrolments →</Button>
+              </Link>
+            </Card>
+          )}
+          {pupils && pupils.length > 0 && (
+            <div className="bg-surface-2 border border-line-1 rounded-r-3 overflow-hidden">
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="border-b border-line-2">
+                    {['Name', 'Code', 'Level', 'Class', 'PIN set'].map((h) => (
+                      <th key={h} className="text-left px-s-4 py-s-3 font-mono text-[11px] uppercase tracking-[0.10em] text-ink-3">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {pupils.map((p) => (
+                    <tr key={p.id} className="border-b border-line-1 last:border-0 hover:bg-surface-3/40">
+                      <td className="px-s-4 py-s-3 text-ink-1 font-medium">{p.full_name}</td>
+                      <td className="px-s-4 py-s-3 font-mono text-ink-3 text-[12px]">
+                        {p.pupil_code ?? <span className="text-ink-4 italic">none</span>}
+                      </td>
+                      <td className="px-s-4 py-s-3 text-ink-3">
+                        {(p.level ?? '').replace('_', ' ')}
+                      </td>
+                      <td className="px-s-4 py-s-3 text-ink-3">
+                        {p.classes?.name ?? <span className="text-ink-4 italic">unassigned</span>}
+                      </td>
+                      <td className="px-s-4 py-s-3">
+                        {p.pin_hash
+                          ? <Chip variant="green"  size="sm">Set</Chip>
+                          : <Chip variant="amber"  size="sm">Not set</Chip>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="px-s-4 py-s-3 border-t border-line-1 flex justify-between items-center">
+                <span className="font-mono text-[11px] text-ink-4">
+                  {pupils.length} pupil{pupils.length !== 1 ? 's' : ''}
+                </span>
+                <Link to="/app/admin/pupils/pins" className="text-[12px] text-gold-200 hover:text-gold-50">
+                  Manage PINs →
+                </Link>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

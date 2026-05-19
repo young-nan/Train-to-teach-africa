@@ -21,20 +21,25 @@ import { StaffView }          from './StaffView';
 import { CurriculumView }     from './CurriculumView';
 import { TermLocksView }      from './TermLocksView';
 import { ImpactDashboardView } from './ImpactDashboardView';
-import { ConnectionsView } from './ConnectionsView';
+import { ConnectionsView }     from './ConnectionsView';
+import { SchoolSettingsView }  from './SchoolSettingsView';
+import { SchoolInterventionsView } from './SchoolInterventionsView';
 import { BillingDashboardView } from '@/modules/billing/BillingDashboardView';
 import { InvoiceEditorView }    from '@/modules/billing/InvoiceEditorView';
 import { BulkInvoiceView }      from '@/modules/billing/BulkInvoiceView';
+import { InvoicePrintView }     from '@/modules/billing/InvoicePrintView';
 
 const BASE_NAV = [
-  { to: '/app/admin',             label: 'Overview',   end: true },
-  { to: '/app/admin/enrollments', label: 'Enrolments' },
-  { to: '/app/admin/staff',       label: 'Staff'      },
-  { to: '/app/admin/connections', label: 'Connections' },
-  { to: '/app/admin/curriculum',  label: 'Curriculum' },
-  { to: '/app/admin/terms',       label: 'Terms'      },
-  { to: '/app/admin/alerts',      label: 'Alerts'     },
-  { to: '/app/admin/impact',      label: 'Impact'     },
+  { to: '/app/admin',                label: 'Overview',       end: true },
+  { to: '/app/admin/interventions',  label: 'Interventions'             },
+  { to: '/app/admin/enrollments',    label: 'Enrolments'                },
+  { to: '/app/admin/staff',          label: 'Staff'                     },
+  { to: '/app/admin/connections',    label: 'Connections'               },
+  { to: '/app/admin/curriculum',     label: 'Curriculum'                },
+  { to: '/app/admin/terms',          label: 'Terms'                     },
+  { to: '/app/admin/alerts',         label: 'Alerts'                    },
+  { to: '/app/admin/impact',         label: 'Impact'                    },
+  { to: '/app/admin/settings',       label: 'Settings'                  },
 ];
 
 function buildNav(role) {
@@ -50,22 +55,25 @@ export default function AdminApp() {
   return (
     <Routes>
       <Route index                element={<OverviewView />} />
+      <Route path="interventions" element={wrap('Interventions', <SchoolInterventionsView />)} />
       <Route path="enrollments"   element={wrap('Enrolments', <EnrollmentsView />)} />
       <Route path="pupils/import" element={wrap('Import pupils', <PupilImportView />)} />
       <Route path="pupils/add"    element={wrap('Add pupil', <PupilSingleAddView />)} />
       <Route path="pupils/pins"   element={wrap('Student PINs', <PupilPinManager />)} />
       <Route path="staff"         element={wrap('Staff', <StaffView />)} />
-      <Route path="connections" element={wrap('Connections', <ConnectionsView />)} />
+      <Route path="connections"   element={wrap('Connections', <ConnectionsView />)} />
       <Route path="curriculum"    element={wrap('Curriculum', <CurriculumView />)} />
       <Route path="terms"         element={wrap('Terms', <TermLocksView />)} />
       <Route path="alerts"        element={<AlertsView />} />
       <Route path="impact"        element={wrap('Impact', <ImpactDashboardView />)} />
+      <Route path="settings"      element={wrap('Settings', <SchoolSettingsView />)} />
       {role === 'school_admin' && (
         <>
-          <Route path="billing"                    element={<BillingDashboardView />} />
-          <Route path="billing/invoice/:invoiceId" element={<InvoiceEditorView />} />
-          <Route path="billing/invoice/new"        element={<InvoiceEditorView />} />
-          <Route path="billing/bulk"               element={<BulkInvoiceView />} />
+          <Route path="billing"                           element={<BillingDashboardView />} />
+          <Route path="billing/invoice/:invoiceId"        element={<InvoiceEditorView />} />
+          <Route path="billing/invoice/:invoiceId/print"  element={<InvoicePrintView />} />
+          <Route path="billing/invoice/new"               element={<InvoiceEditorView />} />
+          <Route path="billing/bulk"                      element={<BulkInvoiceView />} />
         </>
       )}
     </Routes>

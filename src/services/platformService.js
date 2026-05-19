@@ -76,14 +76,14 @@ export async function listAllSchools() {
 /**
  * Create a new school on the platform.
  */
-export async function createSchool({ name, city, state, email, phone }) {
+export async function createSchool({ name, city, state, phone }) {
   const slug = name.toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 
   const { data, error } = await supabase
     .from('schools')
-    .insert({ name, city, state, email, phone, slug, active: true })
+    .insert({ name, city, state, phone, slug, status: 'active' })
     .select()
     .single();
   if (error) throw new Error(`Could not create school: ${error.message}`);

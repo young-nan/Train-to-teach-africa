@@ -189,7 +189,7 @@ function ImporterTab() {
             ref={fileRef}
             type="file"
             accept=".json,application/json"
-            className="hidden"
+            className="sr-only"
             onChange={onFileChange}
           />
         </label>

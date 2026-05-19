@@ -480,17 +480,11 @@ function BrowserTab() {
                           Restore
                         </button>
                       ) : (
-                        <button
-                          onClick={() => {
-                            if (window.confirm(`Archive "${l.title}"? Students and teachers will no longer see it.`)) {
-                              archiveMutation.mutate(l.id);
-                            }
-                          }}
-                          disabled={archiveMutation.isPending}
-                          className="text-[12px] text-ink-4 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          Archive
-                        </button>
+                        <ArchiveButton
+                          title={l.title}
+                          onConfirm={() => archiveMutation.mutate(l.id)}
+                          isPending={archiveMutation.isPending}
+                        />
                       )}
                     </td>
                   </tr>
@@ -540,5 +534,28 @@ function Select({ value, onChange, options }) {
         <option key={o.value} value={o.value}>{o.label}</option>
       ))}
     </select>
+  );
+}
+
+function ArchiveButton({ title, onConfirm, isPending }) {
+  const [confirm, setConfirm] = useState(false);
+  if (confirm) {
+    return (
+      <span className="flex items-center gap-s-2 font-mono text-[11px]">
+        <span className="text-red-400">Archive?</span>
+        <button onClick={() => { onConfirm(); setConfirm(false); }} className="text-red-400 font-medium" disabled={isPending}>
+          {isPending ? '…' : 'Yes'}
+        </button>
+        <button onClick={() => setConfirm(false)} className="text-ink-3">No</button>
+      </span>
+    );
+  }
+  return (
+    <button
+      onClick={() => setConfirm(true)}
+      className="text-[12px] text-ink-4 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+    >
+      Archive
+    </button>
   );
 }

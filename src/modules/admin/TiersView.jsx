@@ -128,8 +128,10 @@ function TierEditPanel({ tier, onClose }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
     name: tier.name,
-    // We edit price as a "major unit" decimal — admins think in whole naira/dollars
-    price_major: (tier.price_minor / 100).toString(),
+    // Edit as major-unit decimal — admins think in whole naira/dollars
+    price_major: tier.currency === 'USD'
+      ? (tier.price_minor / 100).toFixed(2)
+      : Math.round(tier.price_minor / 100).toString(),
     description: tier.description ?? '',
     paystack_plan_code: tier.paystack_plan_code ?? '',
     active: tier.active,
@@ -157,7 +159,7 @@ function TierEditPanel({ tier, onClose }) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'tiers'] });
-      qc.invalidateQueries({ queryKey: ['pricing-tiers'] }); // any public-page caches
+      qc.invalidateQueries({ queryKey: ['public', 'tiers'] }); // busts PricingPage cache
       onClose();
     },
   });

@@ -15,6 +15,7 @@ export const PARENT_NAV = [
   { to: '/app/parent/lessons',        label: 'Lessons'                  },
   { to: '/app/parent/reports',        label: 'Reports'                  },
   { to: '/app/parent/messages',       label: 'Messages'                 },
+  { to: '/app/parent/tutors',         label: 'Tutors'                   },
   { to: '/app/parent/billing',        label: 'Fees'                     },
   { to: '/app/parent/whatsapp',       label: 'WhatsApp'                 },
   { to: '/app/parent/subscribe',      label: 'Subscribe'                },

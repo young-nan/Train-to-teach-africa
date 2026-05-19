@@ -235,7 +235,7 @@ export function useTutorSearch(initialFilters = {}) {
   }, [filters, page]);
 
   // Re-search whenever filters or page change.
-  useEffect(() => { search(); }, [filters, page]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { search(); }, [filters, page]);
 
   const updateFilter = useCallback((key, value) => {
     setPage(1); // Reset to page 1 when filter changes.

@@ -317,3 +317,66 @@ export function fmtContactDate(iso) {
   if (diffDays < 7)  return `${diffDays} days ago`;
   return d.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+
+
+// ── Parent replies ────────────────────────────────────────────────────────────
+
+/**
+ * Send a parent reply to a school note.
+ * @param {string} commsId  - parent_comms row the parent is replying to
+ * @param {string} pupilId  - which child this reply is about
+ * @param {string} schoolId - the school that sent the original note
+ * @param {string} body     - the reply text (max 1000 chars)
+ */
+export async function sendParentReply({ commsId, pupilId, schoolId, body }) {
+  if (!body?.trim()) throw new Error('Reply cannot be empty.');
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated.');
+
+  const { data, error } = await supabase
+    .from('parent_replies')
+    .insert({
+      comms_id:  commsId,
+      pupil_id:  pupilId,
+      school_id: schoolId,
+      parent_id: user.id,
+      body:      body.trim(),
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(`Could not send reply: ${error.message}`);
+  return data;
+}
+
+/**
+ * Fetch parent replies for a specific comms entry.
+ * Used by teachers in CommsView to see parent responses.
+ */
+export async function getParentRepliesForComms(commsId) {
+  const { data, error } = await supabase
+    .from('parent_replies')
+    .select('id, body, created_at, profiles(full_name)')
+    .eq('comms_id', commsId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(`Could not load replies: ${error.message}`);
+  return data ?? [];
+}
+
+/**
+ * Fetch all replies for a pupil's messages (parent-facing).
+ * Returns replies keyed by comms_id so the UI can thread them.
+ */
+export async function getMyRepliesForPupil(pupilId) {
+  const { data, error } = await supabase
+    .from('parent_replies')
+    .select('id, comms_id, body, created_at')
+    .eq('pupil_id', pupilId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(`Could not load replies: ${error.message}`);
+  // Group by comms_id for easy lookup
+  return (data ?? []).reduce((acc, r) => {
+    (acc[r.comms_id] ??= []).push(r);
+    return acc;
+  }, {});
+}

@@ -160,21 +160,21 @@ function ImporterTab() {
   if (!parsed && !importResult) {
     return (
       <div className="space-y-s-5">
-        {/* Drop zone */}
-        <div
+        {/* Drop / click zone — label wraps hidden input for trusted file-picker activation */}
+        <label
+          htmlFor="lesson-file-input"
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={onDrop}
           onPaste={onPaste}
           tabIndex={0}
           className={cn(
-            'border-2 border-dashed rounded-r-3 p-s-10 text-center cursor-pointer transition-all duration-150',
+            'border-2 border-dashed rounded-r-3 p-s-10 text-center cursor-pointer transition-all duration-150 block',
             'focus:outline-none focus:border-gold-400',
             isDragging
               ? 'border-gold-400 bg-gold-400/5'
               : 'border-line-3 hover:border-line-3 bg-surface-2',
           )}
-          onClick={() => fileRef.current?.click()}
         >
           <div className="text-[36px] mb-s-3">📂</div>
           <p className="text-[15px] text-ink-1 font-medium mb-s-2">
@@ -184,8 +184,15 @@ function ImporterTab() {
             or click to browse · or paste JSON directly into this area
           </p>
           <Chip variant="default" size="sm">Supports single lesson objects or arrays up to 200 rows</Chip>
-          <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={onFileChange} />
-        </div>
+          <input
+            id="lesson-file-input"
+            ref={fileRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={onFileChange}
+          />
+        </label>
 
         {parseError && (
           <div className="text-[13px] text-red-400 bg-red-400/10 border border-red-400/20 rounded-r-2 px-s-4 py-s-3">
@@ -449,13 +456,15 @@ function BrowserTab() {
                 {lessons.map((l) => (
                   <tr key={l.id} className="border-b border-line-1 hover:bg-surface-2/50 group">
                     <td className="px-s-4 py-[10px]">
-                      <p className="text-ink-1 font-medium leading-snug">{l.title}</p>
-                      <p className="text-ink-4 text-[11px] mt-[1px]">{l.topic}</p>
+                      <p className="text-ink-1 font-medium leading-snug">{String(l.title ?? '')}</p>
+                      <p className="text-ink-4 text-[11px] mt-[1px]">{String(l.topic ?? '')}</p>
                     </td>
                     <td className="px-s-4 py-[10px] text-ink-3 whitespace-nowrap">
-                      {l.level.replace('_', ' ')}
+                      {String(l.level ?? '').replace('_', ' ')}
                     </td>
-                    <td className="px-s-4 py-[10px] text-ink-3 whitespace-nowrap">{l.subject}</td>
+                    <td className="px-s-4 py-[10px] text-ink-3 whitespace-nowrap">
+                      {String(l.subject ?? '')}
+                    </td>
                     <td className="px-s-4 py-[10px] text-ink-4 text-center">{l.week_of_term ?? '—'}</td>
                     <td className="px-s-4 py-[10px]">{statusChip(l.status)}</td>
                     <td className="px-s-4 py-[10px] font-mono text-ink-4 text-[11px] whitespace-nowrap">

@@ -82,6 +82,12 @@ function SchoolAdminImpact({ schoolId, schoolName }) {
     staleTime: 60_000,
   });
 
+  const { data: waStats } = useQuery({
+    queryKey: ['impact', 'wa-delivery'],
+    queryFn:  () => impactService.getWhatsAppDeliveryStats(30),
+    staleTime: 10 * 60_000,
+  });
+
   if (impactLoading) return <LoadingSkeleton />;
   if (!impact) return <NoDataCard />;
 
@@ -89,6 +95,7 @@ function SchoolAdminImpact({ schoolId, schoolName }) {
     <div className="space-y-s-7">
       <KpiBand impact={impact} network={network} />
       {snapshots?.length > 1 && <TrendSection snapshots={snapshots} />}
+      {waStats?.length > 1 && <WADeliveryChart data={waStats} />}
       <NetworkComparisonSection impact={impact} network={network} />
       <ExportBar schoolId={schoolId} schoolName={schoolName} />
       <PublicPageToggle schoolId={schoolId} impact={impact} />
@@ -325,6 +332,74 @@ function SparklineRow({ label, values, weeks, color, max = 100 }) {
 }
 
 // ── Network comparison ────────────────────────────────────────────────────────
+
+// ── WhatsApp delivery chart ───────────────────────────────────────────────────
+// Day-by-day bar chart from the whatsapp_delivery_stats view.
+// Two bars per day: send_succeeded (gold) and confirmed_delivered (green).
+
+function WADeliveryChart({ data }) {
+  const maxDispatched = Math.max(...data.map((d) => d.total_dispatched ?? 0), 1);
+
+  return (
+    <Card className="bg-surface-2 border-line-2">
+      <div className="font-mono text-eyebrow uppercase text-gold-400 mb-s-5">
+        WhatsApp delivery · last 30 days
+      </div>
+      <div className="flex items-end gap-[3px] h-[100px] overflow-x-auto pb-s-2">
+        {data.map((d) => {
+          const sentH     = Math.round(((d.send_succeeded     ?? 0) / maxDispatched) * 100);
+          const delivH    = Math.round(((d.confirmed_delivered ?? 0) / maxDispatched) * 100);
+          const dateLabel = new Date(d.dispatch_date + 'T00:00:00')
+            .toLocaleDateString('en-NG', { day: 'numeric', month: 'short' });
+
+          return (
+            <div
+              key={d.dispatch_date}
+              className="flex flex-col items-center gap-[2px] shrink-0 group relative"
+              style={{ minWidth: 14 }}
+            >
+              {/* Tooltip */}
+              <div className="absolute bottom-full mb-s-2 hidden group-hover:flex flex-col items-center z-10 pointer-events-none">
+                <div className="bg-surface-4 border border-line-2 rounded-r-1 px-s-3 py-s-2 text-[11px] font-mono whitespace-nowrap text-ink-1 shadow-lg">
+                  <div>{dateLabel}</div>
+                  <div className="text-gold-400">Sent: {d.send_succeeded ?? 0}</div>
+                  <div className="text-green-400">Delivered: {d.confirmed_delivered ?? 0}</div>
+                  {d.delivery_rate_pct != null && (
+                    <div className="text-ink-3">Rate: {d.delivery_rate_pct}%</div>
+                  )}
+                </div>
+              </div>
+              {/* Sent bar (gold) */}
+              <div
+                className="w-[6px] bg-gold-400/60 rounded-t-sm transition-all"
+                style={{ height: `${Math.max(sentH, d.send_succeeded > 0 ? 2 : 0)}%` }}
+              />
+              {/* Delivered bar (green, overlaid lower) */}
+              <div
+                className="w-[6px] bg-green-400/70 rounded-sm -mt-[4px] transition-all"
+                style={{ height: `${Math.max(delivH, d.confirmed_delivered > 0 ? 2 : 0)}%` }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      {/* Legend */}
+      <div className="flex items-center gap-s-5 mt-s-3">
+        <div className="flex items-center gap-s-2">
+          <div className="w-[10px] h-[10px] rounded-sm bg-gold-400/60" />
+          <span className="font-mono text-[11px] text-ink-3">Sent to Meta</span>
+        </div>
+        <div className="flex items-center gap-s-2">
+          <div className="w-[10px] h-[10px] rounded-sm bg-green-400/70" />
+          <span className="font-mono text-[11px] text-ink-3">Confirmed delivered</span>
+        </div>
+        <span className="font-mono text-[11px] text-ink-4 ml-auto">
+          {data.length} days shown
+        </span>
+      </div>
+    </Card>
+  );
+}
 
 function NetworkComparisonSection({ impact, network }) {
   if (!network) return null;

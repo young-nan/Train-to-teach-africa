@@ -228,6 +228,7 @@ function PupilCommsPanel({ pupil, schoolId, classId }) {
     contactType:      'note',
     body:             '',
     sharedWithParent: false,
+    ccHeadTeacher:    false,
     followUpNeeded:   false,
     followUpDate:     '',
   });
@@ -256,12 +257,13 @@ function PupilCommsPanel({ pupil, schoolId, classId }) {
       contactType:      form.contactType,
       body:             form.body,
       sharedWithParent: form.sharedWithParent,
+      ccHeadTeacher:    form.ccHeadTeacher,
       followUpNeeded:   form.followUpNeeded,
       followUpDate:     form.followUpDate || null,
     }),
     onSuccess: () => {
       invalidate();
-      setForm({ contactType: 'note', body: '', sharedWithParent: false, followUpNeeded: false, followUpDate: '' });
+      setForm({ contactType: 'note', body: '', sharedWithParent: false, ccHeadTeacher: false, followUpNeeded: false, followUpDate: '' });
       setError(null);
     },
     onError: (e) => setError(friendlyError(e)),
@@ -440,6 +442,16 @@ function PupilCommsPanel({ pupil, schoolId, classId }) {
                 className="accent-gold-400 w-4 h-4"
               />
               <span className="text-[13.5px] text-ink-2">Share with parent</span>
+            </label>
+
+            <label className="flex items-center gap-s-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.ccHeadTeacher}
+                onChange={(e) => setForm((f) => ({ ...f, ccHeadTeacher: e.target.checked }))}
+                className="accent-gold-400 w-4 h-4"
+              />
+              <span className="text-[13.5px] text-ink-2">CC head of school</span>
             </label>
 
             <label className="flex items-center gap-s-2 cursor-pointer select-none">

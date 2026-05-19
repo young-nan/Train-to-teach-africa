@@ -334,7 +334,7 @@ export function AppShell({ navItems = [], children, title }) {
             <div className="mt-s-3 font-mono text-meta text-ink-3 truncate">{schoolName}</div>
           )}
         </div>
-        <nav className="p-s-4 flex flex-col gap-s-1 flex-1" aria-label="Main navigation">
+        <nav className="p-s-4 flex flex-col gap-s-1 flex-1 overflow-y-auto min-h-0" aria-label="Main navigation">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -386,8 +386,12 @@ export function AppShell({ navItems = [], children, title }) {
             <h1 className="font-heading text-[17px] lg:text-[20px] font-semibold text-ink-0">{title}</h1>
             <div className="flex items-center gap-s-3 lg:gap-s-4">
               <SyncPill />
-              {/* Profile avatar — hidden on very small screens, shown md+ */}
-              <div className="hidden md:flex items-center gap-s-3">
+              {/* Profile avatar — top right, always links to account settings */}
+              <Link
+                to="/account"
+                className="hidden md:flex items-center gap-s-3 hover:opacity-80 transition-opacity"
+                title="Account settings"
+              >
                 <div className="text-right leading-tight">
                   <div className="text-[13px] text-ink-1">{profile?.full_name}</div>
                   <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">
@@ -395,7 +399,7 @@ export function AppShell({ navItems = [], children, title }) {
                   </div>
                 </div>
                 <Avatar name={profile?.full_name} />
-              </div>
+              </Link>
             </div>
           </div>
         </header>

@@ -6,7 +6,7 @@
  * Cross-school communications hub for school_admin and head_teacher.
  *
  * Three tabs:
- *   Comms     — all parent_comms entries for the school (CC'd or all)
+ *   Comms      — all parent_comms entries for the school (CC'd or all)
  *   Attendance — all pupils' attendance across all classes, filterable by date
  *   Reports    — all published term report cards for the school
  *
@@ -107,8 +107,8 @@ function CommsTab() {
       {/* Filter pills */}
       <div className="flex flex-wrap gap-s-2 mb-s-2">
         {[
-          { id: 'all',       label: 'All notes' },
-          { id: 'cc',        label: 'CC'd to you' },
+          { id: 'all',        label: 'All notes' },
+          { id: 'cc',         label: "CC'd to you" },
           { id: 'follow_up', label: 'Follow-up needed' },
         ].map((f) => (
           <button
@@ -280,7 +280,7 @@ function ReportsTab() {
         .from('report_envelopes')
         .select(`
           id, term, academic_year, status, published_at,
-          pupils(full_name, pupil_code, classes(name))
+          pupils(full_name, pupil_code, classes(name), id)
         `)
         .eq('school_id', schoolId)
         .eq('status', 'published')

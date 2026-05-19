@@ -227,3 +227,19 @@ function slugify(name) {
 function today() {
   return new Date().toISOString().slice(0, 10);
 }
+
+/**
+ * Fetch per-day WhatsApp delivery stats from the whatsapp_delivery_stats view.
+ * Returns the last `days` days ordered date ASC for chart rendering.
+ * Used by ImpactDashboardView's WA Delivery chart.
+ */
+export async function getWhatsAppDeliveryStats(days = 30) {
+  const since = new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from('whatsapp_delivery_stats')
+    .select('dispatch_date, total_dispatched, send_succeeded, send_failed, confirmed_delivered, delivery_rate_pct')
+    .gte('dispatch_date', since)
+    .order('dispatch_date', { ascending: true });
+  if (error) throw new Error(`Could not load WA delivery stats: ${error.message}`);
+  return data ?? [];
+}

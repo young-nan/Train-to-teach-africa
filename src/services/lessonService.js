@@ -193,20 +193,27 @@ export async function bulkImportLessons(lessons) {
  * Returns paginated rows with lightweight fields only (no content blob).
  */
 export async function listAllLessonsAdmin({ level, subject, status, search, page = 0, pageSize = 50 } = {}) {
-  let query = supabase
-    .from('lessons')
-    .select('id, curriculum_code, level, subject, topic, title, week_of_term, sort_index, status, estimated_minutes, version, created_at, updated_at', { count: 'exact' });
+  // Use an RPC instead of the REST table endpoint.
+  // The RPC explicitly casts level/subject/status to text, which prevents
+  // PostgREST from auto-embedding any FK-related tables (e.g. a 'levels' table)
+  // as nested objects — which causes React error #31 in the BrowserTab table.
+  const { data, error } = await supabase.rpc('list_lessons_admin', {
+    p_level:   level   || null,
+    p_subject: subject || null,
+    p_status:  status  || null,
+    p_search:  search  || null,
+    p_page:    page,
+    p_size:    pageSize,
+  });
 
-  if (level)   query = query.eq('level', level);
-  if (subject) query = query.eq('subject', subject);
-  if (status)  query = query.eq('status', status);
-  if (search)  query = query.or(`title.ilike.%${search}%,topic.ilike.%${search}%,curriculum_code.ilike.%${search}%`);
-
-  query = query.order('level').order('sort_index').range(page * pageSize, (page + 1) * pageSize - 1);
-
-  const { data, error, count } = await query;
   if (error) throw new Error(`Could not load lessons: ${error.message}`);
-  return { lessons: data ?? [], total: count ?? 0 };
+
+  const rows  = data ?? [];
+  const total = rows.length > 0 ? Number(rows[0].total_count ?? 0) : 0;
+
+  // Strip total_count from each row — it's a window function artefact
+  const lessons = rows.map(({ total_count, ...rest }) => rest);
+  return { lessons, total };
 }
 
 /**

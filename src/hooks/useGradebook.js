@@ -29,7 +29,6 @@ export function useGradebookColumn({ column, classId, pupils, existingScores = [
   useEffect(() => {
     setGrid(buildInitialGrid(pupils, existingScores));
     setError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [column?.id]);
 
   /**
@@ -154,4 +153,3 @@ function buildInitialGrid(pupils, existingScores) {
   }
   return g;
 }
-

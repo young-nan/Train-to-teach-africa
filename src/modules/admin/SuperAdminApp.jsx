@@ -271,7 +271,7 @@ function SchoolsView() {
 
 function CreateSchoolCard({ onDone }) {
   const qc = useQueryClient();
-  const [form, setForm] = useState({ name: '', city: '', state: '', email: '', phone: '' });
+  const [form, setForm] = useState({ name: '', city: '', state: '', phone: '' });
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
   const create = useMutation({
@@ -286,8 +286,8 @@ function CreateSchoolCard({ onDone }) {
         <FormField label="School name *">
           <TextInput value={form.name} onChange={(v) => set('name', v)} placeholder="Greenfield Academy" />
         </FormField>
-        <FormField label="Email (for school admin account)">
-          <TextInput value={form.email} onChange={(v) => set('email', v)} placeholder="admin@school.ng" />
+        <FormField label="Phone">
+          <TextInput value={form.phone} onChange={(v) => set('phone', v)} placeholder="+234 1 234 5678" />
         </FormField>
         <FormField label="City">
           <TextInput value={form.city} onChange={(v) => set('city', v)} placeholder="Lagos" />

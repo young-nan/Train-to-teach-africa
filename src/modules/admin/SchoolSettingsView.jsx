@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
+import * as consentService from '@/services/consentService';
 import { friendlyError } from '@/utils/friendlyError';
 import { cn } from '@/utils/cn';
 
@@ -90,6 +91,7 @@ export function SchoolSettingsView() {
       <SchoolIdentityCard school={school} schoolId={schoolId} qc={qc} />
       <RiskThresholdCard schoolId={schoolId} />
       <TermLinksCard />
+      <SchoolConsentCard schoolId={schoolId} />
     </div>
   );
 }
@@ -370,6 +372,82 @@ function TermLinksCard() {
       >
         Go to Terms &amp; locks →
       </a>
+    </Card>
+  );
+}
+
+// ── School consent card ───────────────────────────────────────────────────────
+
+function SchoolConsentCard({ schoolId }) {
+  const qc = useQueryClient();
+
+  const { data: consents, isLoading } = useQuery({
+    queryKey: ['school-consents', schoolId],
+    queryFn:  () => consentService.getSchoolConsents(schoolId),
+    enabled:  !!schoolId,
+    staleTime: 60_000,
+  });
+
+  const toggle = useMutation({
+    mutationFn: ({ type, granted }) =>
+      consentService.setSchoolConsent(schoolId, type, granted),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['school-consents', schoolId] }),
+  });
+
+  return (
+    <Card className="bg-surface-2">
+      <div className="flex items-start justify-between mb-s-4">
+        <div>
+          <div className="font-mono text-eyebrow uppercase text-gold-400">Data &amp; privacy</div>
+          <p className="text-[13px] text-ink-3 mt-s-1 max-w-[48ch]">
+            Choose how your school's data contributes to research and TTA network insights.
+            Operational processing is always required.
+          </p>
+        </div>
+        <a href="/privacy" target="_blank" rel="noopener noreferrer"
+          className="font-mono text-[11px] text-gold-200 hover:text-gold-50 shrink-0 ml-s-4">
+          Privacy policy →
+        </a>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-s-2">
+          {[1,2,3].map(i=><div key={i} className="h-[56px] bg-surface-3 rounded-r-2 animate-pulse"/>)}
+        </div>
+      ) : (
+        <div className="space-y-s-3">
+          {consentService.SCHOOL_CONSENT_TYPES.map((type) => {
+            const meta    = consentService.CONSENT_META[type];
+            const granted = consents?.[type] ?? false;
+            return (
+              <div key={type} className="flex items-start gap-s-4 py-s-3 border-b border-line-1 last:border-0">
+                <div className="flex-1">
+                  <div className="flex items-center gap-s-2 mb-[2px]">
+                    <span className="text-[13.5px] font-medium text-ink-0">{meta.label}</span>
+                    {meta.required && <Chip variant="gold" size="sm">Required</Chip>}
+                  </div>
+                  <p className="text-[12px] text-ink-3">{meta.body}</p>
+                </div>
+                <div className="shrink-0 mt-[3px]">
+                  {meta.required ? (
+                    <span className="font-mono text-[11px] text-green-400">✓ Always on</span>
+                  ) : (
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={granted}
+                        onChange={(e) => toggle.mutate({ type, granted: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-[38px] h-[21px] bg-surface-3 peer-checked:bg-gold-400/60 rounded-full transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-[17px] after:w-[17px] after:transition-all peer-checked:after:translate-x-[17px]" />
+                    </label>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </Card>
   );
 }

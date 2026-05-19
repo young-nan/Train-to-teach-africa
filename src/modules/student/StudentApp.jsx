@@ -388,7 +388,7 @@ function LessonContent({ lesson, pupilId, lessonId, onFinish }) {
       }
       setSessionLoaded(true);
     });
-  }, [lessonId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lessonId]);
 
   // Persist page position on every navigation
   useEffect(() => {
@@ -396,7 +396,7 @@ function LessonContent({ lesson, pupilId, lessonId, onFinish }) {
     saveSession(lessonId, page, {});
     const pct = Math.round(((page + 1) / Math.max(pages.length, 1)) * 99);
     studentService.updateLessonProgress(pupilId, lessonId, pct);
-  }, [page, sessionLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [page, sessionLoaded]);
 
   const isLast  = page === pages.length - 1;
   const current = pages[page];

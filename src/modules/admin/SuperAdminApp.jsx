@@ -541,7 +541,8 @@ function InvitePlatformUserCard({ onDone }) {
 
 function TutorsView() {
   const qc = useQueryClient();
-  const [status, setStatus] = useState('pending');
+  const [status, setStatus]           = useState('pending');
+  const [rejectTarget, setRejectTarget] = useState(null);
 
   const { data: result, isLoading } = useQuery({
     queryKey: ['super', 'tutors', status],
@@ -556,14 +557,17 @@ function TutorsView() {
 
   const reject = useMutation({
     mutationFn: ({ tutorId, reason }) => tutorService.rejectTutor({ tutorId, reason }),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: ['super', 'tutors'] }),
+    onSuccess:  () => {
+      qc.invalidateQueries({ queryKey: ['super', 'tutors'] });
+      setRejectTarget(null);
+    },
   });
 
   const STATUS_TABS = [
-    { value: 'pending',  label: 'Pending' },
+    { value: 'pending',  label: 'Pending'  },
     { value: 'approved', label: 'Approved' },
     { value: 'rejected', label: 'Rejected' },
-    { value: '',         label: 'All' },
+    { value: '',         label: 'All'      },
   ];
 
   return (
@@ -611,9 +615,15 @@ function TutorsView() {
                     {tutor.teaches_online  && <Chip variant="gold"    size="sm">Online</Chip>}
                     {tutor.teaches_offline && <Chip variant="default" size="sm">In-person</Chip>}
                   </div>
+                  {tutor.bio && (
+                    <p className="mt-s-3 text-[13px] text-ink-3 line-clamp-2">{tutor.bio}</p>
+                  )}
                   <div className="mt-s-2 font-mono text-meta text-ink-3">
                     Applied {new Date(tutor.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </div>
+                  {tutor.rejection_reason && (
+                    <p className="mt-s-2 text-[12px] text-red-400">Reason: {tutor.rejection_reason}</p>
+                  )}
                 </div>
                 <div className="flex flex-col items-end gap-s-2 flex-shrink-0">
                   <Chip variant={
@@ -624,13 +634,14 @@ function TutorsView() {
                   </Chip>
                   {tutor.approval_status === 'pending' && (
                     <div className="flex gap-s-2 mt-s-2">
-                      <Button intent="primary" size="sm" onClick={() => approve.mutate({ tutorId: tutor.id })}>
+                      <Button
+                        intent="primary" size="sm"
+                        isLoading={approve.isPending && approve.variables?.tutorId === tutor.id}
+                        onClick={() => approve.mutate({ tutorId: tutor.id })}
+                      >
                         Approve
                       </Button>
-                      <Button intent="ghost" size="sm" onClick={() => {
-                        const reason = window.prompt('Reason for rejection (required):');
-                        if (reason?.trim()) reject.mutate({ tutorId: tutor.id, reason });
-                      }}>
+                      <Button intent="ghost" size="sm" onClick={() => setRejectTarget(tutor)}>
                         Reject
                       </Button>
                     </div>
@@ -646,7 +657,64 @@ function TutorsView() {
           )}
         </div>
       </div>
+
+      {rejectTarget && (
+        <RejectTutorModal
+          tutor={rejectTarget}
+          onClose={() => setRejectTarget(null)}
+          onConfirm={(reason) => reject.mutate({ tutorId: rejectTarget.id, reason })}
+          isLoading={reject.isPending}
+        />
+      )}
     </AppShell>
+  );
+}
+
+function RejectTutorModal({ tutor, onClose, onConfirm, isLoading }) {
+  const [reason, setReason] = useState('');
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-s-4 bg-surface-0/80 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-[420px] bg-surface-2 border border-line-2 rounded-r-3 shadow-2xl">
+        <div className="flex items-center justify-between px-s-6 py-s-5 border-b border-line-1">
+          <div>
+            <h3 className="font-display text-[20px] text-ink-0">Reject application</h3>
+            <p className="font-mono text-meta text-ink-3 mt-[2px]">{tutor.full_name}</p>
+          </div>
+          <button onClick={onClose} className="text-ink-4 hover:text-ink-1 text-[20px] leading-none">×</button>
+        </div>
+        <div className="px-s-6 py-s-5 space-y-s-4">
+          <p className="text-[13px] text-ink-2">
+            This will move the tutor to rejected status and they will not appear in parent searches.
+            A clear reason helps the tutor improve a future application.
+          </p>
+          <label className="flex flex-col gap-s-2">
+            <span className="font-mono text-meta uppercase tracking-[0.12em] text-ink-3">Reason *</span>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              autoFocus
+              placeholder="e.g. Incomplete guarantor details, unverifiable qualifications…"
+              className="bg-surface-3 border border-line-2 rounded-r-2 px-s-3 py-s-3 text-[14px] text-ink-0 outline-none focus:border-gold-400 resize-none"
+            />
+          </label>
+        </div>
+        <div className="flex items-center justify-end gap-s-3 px-s-6 py-s-4 border-t border-line-1">
+          <Button intent="ghost" onClick={onClose} disabled={isLoading}>Cancel</Button>
+          <Button
+            intent="primary"
+            onClick={() => reason.trim() && onConfirm(reason.trim())}
+            isLoading={isLoading}
+            disabled={!reason.trim()}
+          >
+            Confirm rejection
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -29,6 +29,7 @@ import { BillingDashboardView } from '@/modules/billing/BillingDashboardView';
 import { InvoiceEditorView }    from '@/modules/billing/InvoiceEditorView';
 import { BulkInvoiceView }      from '@/modules/billing/BulkInvoiceView';
 import { InvoicePrintView }     from '@/modules/billing/InvoicePrintView';
+import { ReportCardPrint }      from '@/modules/sims/ReportCardPrint';
 
 const BASE_NAV = [
   { to: '/app/admin',                label: 'Overview',       end: true },
@@ -70,6 +71,9 @@ export default function AdminApp() {
       <Route path="alerts"        element={<AlertsView />} />
       <Route path="impact"        element={wrap('Impact', <ImpactDashboardView />)} />
       <Route path="settings"      element={wrap('Settings', <SchoolSettingsView />)} />
+      {/* Report card viewer — linked from SchoolCommsView reports tab */}
+      <Route path="reports/:pupilId/:term/:year/print" element={<ReportCardPrint />} />
+      <Route path="reports/:pupilId/:term/:year"       element={<ReportCardPrint />} />
       {role === 'school_admin' && (
         <>
           <Route path="billing"                           element={<BillingDashboardView />} />

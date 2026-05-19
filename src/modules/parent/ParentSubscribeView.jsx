@@ -120,22 +120,32 @@ export function ParentSubscribeView() {
         <p className="text-[13px] text-ink-2 mb-s-4">
           One subscription covers multiple children. The total price scales with your selection.
         </p>
-        <div className="flex items-center gap-s-5">
+        <div className="flex items-center gap-s-5 flex-wrap">
           <div className="flex items-center gap-s-3">
             <button
               type="button"
               onClick={() => setChildrenCovered((n) => Math.max(1, n - 1))}
-              className="w-[44px] h-[44px] bg-surface-3 border border-line-2 rounded-r-2 text-xl text-ink-1 hover:border-gold-400/60 transition-colors"
+              className="w-[44px] h-[44px] bg-surface-3 border border-line-2 rounded-r-2 text-xl text-ink-1 hover:border-gold-400/60 transition-colors disabled:opacity-40"
               aria-label="Remove one child"
+              disabled={childrenCovered <= 1}
             >
               −
             </button>
-            <span className="font-display text-display-2 text-ink-0 tabular-nums w-[50px] text-center">
-              {childrenCovered}
-            </span>
+            <input
+              type="number"
+              min={1}
+              max={99}
+              value={childrenCovered}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                if (!Number.isNaN(v) && v >= 1 && v <= 99) setChildrenCovered(v);
+              }}
+              className="font-display text-display-2 text-ink-0 tabular-nums w-[64px] text-center bg-transparent outline-none border-b border-line-2 focus:border-gold-400 pb-s-1"
+              aria-label="Number of children"
+            />
             <button
               type="button"
-              onClick={() => setChildrenCovered((n) => Math.min(6, n + 1))}
+              onClick={() => setChildrenCovered((n) => Math.min(99, n + 1))}
               className="w-[44px] h-[44px] bg-surface-3 border border-line-2 rounded-r-2 text-xl text-ink-1 hover:border-gold-400/60 transition-colors"
               aria-label="Add one child"
             >

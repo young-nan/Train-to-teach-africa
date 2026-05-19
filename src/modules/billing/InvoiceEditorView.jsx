@@ -393,8 +393,16 @@ function ViewInvoiceView({ invoiceId }) {
   return (
     <AppShell title="Invoice" navItems={ADMIN_NAV}>
       <div className="max-w-[680px] space-y-s-5">
-        <div className="flex flex-wrap items-center gap-s-4 mb-s-2">
+        <div className="flex flex-wrap items-center justify-between gap-s-4 mb-s-2">
           <Link to="/app/admin/billing" className="font-mono text-meta text-gold-400 hover:text-gold-200">← Billing</Link>
+          <Link
+            to={`/app/admin/billing/invoice/${invoiceId}/print`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-meta text-ink-3 hover:text-ink-0 flex items-center gap-s-2"
+          >
+            🖨 Print / PDF
+          </Link>
         </div>
 
         {/* Header card */}

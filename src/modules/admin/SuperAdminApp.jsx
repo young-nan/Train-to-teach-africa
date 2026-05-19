@@ -246,16 +246,11 @@ function SchoolsView() {
                     </td>
                     <td className="py-s-3">
                       {s.active && (
-                        <button
-                          className="font-mono text-meta text-ink-3 hover:text-red-400 transition-colors"
-                          onClick={() => {
-                            if (window.confirm(`Deactivate ${s.name}? Staff cannot log in until reactivated.`)) {
-                              deactivate.mutate(s.id);
-                            }
-                          }}
-                        >
-                          Deactivate
-                        </button>
+                        <DeactivateButton
+                          name={s.name}
+                          onConfirm={() => deactivate.mutate(s.id)}
+                          isPending={deactivate.isPending && deactivate.variables === s.id}
+                        />
                       )}
                     </td>
                   </tr>
@@ -915,5 +910,28 @@ function TextInput({ value, onChange, placeholder }) {
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
     />
+  );
+}
+
+function DeactivateButton({ name, onConfirm, isPending }) {
+  const [confirm, setConfirm] = useState(false);
+  if (confirm) {
+    return (
+      <span className="flex items-center gap-s-2 font-mono text-meta">
+        <span className="text-red-400">Deactivate?</span>
+        <button onClick={() => { onConfirm(); setConfirm(false); }} className="text-red-400 font-medium" disabled={isPending}>
+          {isPending ? '…' : 'Yes'}
+        </button>
+        <button onClick={() => setConfirm(false)} className="text-ink-3">No</button>
+      </span>
+    );
+  }
+  return (
+    <button
+      className="font-mono text-meta text-ink-3 hover:text-red-400 transition-colors"
+      onClick={() => setConfirm(true)}
+    >
+      Deactivate
+    </button>
   );
 }

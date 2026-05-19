@@ -26,7 +26,8 @@ const SolutionsSchoolsPage  = lazy(() => import('@/pages/public/SolutionsSchools
 const SolutionsParentsPage  = lazy(() => import('@/pages/public/SolutionsParentsPage'));
 const TutorsPage            = lazy(() => import('@/pages/public/TutorsPage'));
 const PublicImpactPage      = lazy(() => import('@/pages/public/PublicImpactPage'));
-const NotFoundPage          = lazy(() => import('@/pages/public/NotFoundPage'));
+const PrivacyPage           = lazy(() => import('@/pages/public/PrivacyPage'));
+const TermsPage             = lazy(() => import('@/pages/public/TermsPage'));
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const SignInPage        = lazy(() => import('@/pages/auth/SignInPage'));
@@ -70,6 +71,8 @@ const router = createBrowserRouter([
   { path: '/',                   element: <App><HomePage /></App> },
   { path: '/pricing',            element: <App><PricingPage /></App> },
   { path: '/about',              element: <App><AboutPage /></App> },
+  { path: '/privacy',            element: <App><PrivacyPage /></App> },
+  { path: '/terms',              element: <App><TermsPage /></App> },
   { path: '/solutions/schools',  element: <App><SolutionsSchoolsPage /></App> },
   { path: '/solutions/parents',  element: <App><SolutionsParentsPage /></App> },
   { path: '/tutors',             element: <App><TutorsPage /></App> },

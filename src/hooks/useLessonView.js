@@ -114,7 +114,6 @@ export function projectLesson(lesson, role) {
 }
 
 function stripAnswer(question) {
-  // eslint-disable-next-line no-unused-vars
   const { answer, explanation, ...rest } = question;
   return rest;
 }

@@ -25,6 +25,7 @@ import { ConnectionsView }     from './ConnectionsView';
 import { SchoolSettingsView }  from './SchoolSettingsView';
 import { SchoolInterventionsView } from './SchoolInterventionsView';
 import { SchoolCommsView }     from './SchoolCommsView';
+import { AuditLogView }        from './AuditLogView';
 import { BillingDashboardView } from '@/modules/billing/BillingDashboardView';
 import { InvoiceEditorView }    from '@/modules/billing/InvoiceEditorView';
 import { BulkInvoiceView }      from '@/modules/billing/BulkInvoiceView';
@@ -42,6 +43,7 @@ const BASE_NAV = [
   { to: '/app/admin/terms',          label: 'Terms'                     },
   { to: '/app/admin/alerts',         label: 'Alerts'                    },
   { to: '/app/admin/impact',         label: 'Impact'                    },
+  { to: '/app/admin/audit',          label: 'Audit log'                 },
   { to: '/app/admin/settings',       label: 'Settings'                  },
 ];
 
@@ -70,6 +72,7 @@ export default function AdminApp() {
       <Route path="terms"         element={wrap('Terms', <TermLocksView />)} />
       <Route path="alerts"        element={<AlertsView />} />
       <Route path="impact"        element={wrap('Impact', <ImpactDashboardView />)} />
+      <Route path="audit"         element={wrap('Audit log', <AuditLogView />)} />
       <Route path="settings"      element={wrap('Settings', <SchoolSettingsView />)} />
       {/* Report card viewer — linked from SchoolCommsView reports tab */}
       <Route path="reports/:pupilId/:term/:year/print" element={<ReportCardPrint />} />
@@ -466,77 +469,158 @@ function QaLockIcon() {
 // ── Alerts full view ──────────────────────────────────────────────────────────
 function AlertsView() {
   const { schoolId, role } = useAuth();
-  const nav = buildNav(role);
-  const { data: alerts, isLoading } = useQuery({ queryKey: ['admin','alerts',schoolId], queryFn: () => fetchAlerts(schoolId), enabled: !!schoolId, staleTime: 60_000, refetchInterval: 60_000 });
-  const { data: atRisk } = useQuery({ queryKey: ['admin','atrisk',schoolId], queryFn: () => fetchAtRisk(schoolId), enabled: !!schoolId, staleTime: 300_000 });
+  const qc  = useQueryClient();
+  const nav  = buildNav(role);
 
-  const byType = (alerts ?? []).reduce((acc, a) => { (acc[a.alert_type]??=[]).push(a); return acc; }, {});
+  const { data: alerts, isLoading } = useQuery({
+    queryKey: ['admin', 'alerts', schoolId],
+    queryFn:  () => fetchAlerts(schoolId),
+    enabled:  !!schoolId,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
+
+  const { data: atRisk } = useQuery({
+    queryKey: ['admin', 'atrisk', schoolId],
+    queryFn:  () => fetchAtRisk(schoolId),
+    enabled:  !!schoolId,
+    staleTime: 300_000,
+  });
+
+  const dismiss = useMutation({
+    mutationFn: async (alertId) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('school_alerts')
+        .update({ dismissed_at: new Date().toISOString(), dismissed_by: user?.id })
+        .eq('id', alertId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'alerts', schoolId] }),
+  });
+
+  const dismissAll = useMutation({
+    mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('school_alerts')
+        .update({ dismissed_at: new Date().toISOString(), dismissed_by: user?.id })
+        .eq('school_id', schoolId)
+        .is('dismissed_at', null);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'alerts', schoolId] }),
+  });
+
+  const SEVERITY_COLOR = { urgent: 'red', warning: 'amber', info: 'gold' };
 
   return (
     <AppShell title="Alerts" navItems={nav}>
       <div className="max-w-[820px]">
-        <div className="mb-s-7">
-          <div className="font-mono text-eyebrow uppercase text-gold-400">Alerts</div>
-          <h2 className="mt-s-3 font-display text-display-2 text-ink-0">What needs your attention.</h2>
-          <p className="mt-s-3 text-body text-ink-2 max-w-[60ch]">Automatically generated from attendance, assessment, and report data. Updated every minute.</p>
+        <div className="mb-s-6 flex items-end justify-between gap-s-4 flex-wrap">
+          <div>
+            <div className="font-mono text-eyebrow uppercase text-gold-400">Alerts</div>
+            <h2 className="mt-s-2 font-display text-display-2 text-ink-0">What needs your attention.</h2>
+            <p className="mt-s-2 text-body text-ink-2 max-w-[58ch]">
+              Generated from attendance, assessment, and report data. Updated every minute.
+            </p>
+          </div>
+          {(alerts ?? []).length > 0 && (
+            <Button
+              intent="ghost"
+              size="sm"
+              onClick={() => dismissAll.mutate()}
+              isLoading={dismissAll.isPending}
+            >
+              Dismiss all
+            </Button>
+          )}
         </div>
 
         {isLoading && <Skeleton />}
 
-        {!isLoading && (alerts??[]).length === 0 && (
+        {!isLoading && (alerts ?? []).length === 0 && (
           <Card className="bg-surface-2 border-green-400/20 bg-green-400/[0.03]">
-            <div className="flex items-center gap-s-3"><Chip variant="green" dot>All clear</Chip><span className="text-body text-ink-1">No alerts right now.</span></div>
+            <div className="flex items-center gap-s-3">
+              <Chip variant="green" dot>All clear</Chip>
+              <span className="text-body text-ink-1">No active alerts right now.</span>
+            </div>
           </Card>
         )}
 
-        <div className="space-y-s-7">
-          {[
-            { key: 'pending_connection',   label: 'Pending parent connection requests', severity: 'info', link: '/app/admin/connections' },
-            { key: 'no_attendance_today',  label: 'Classes with no attendance today' },
-            { key: 'absence_streak',       label: 'Absence streaks' },
-            { key: 'ungraded_assessment',  label: 'Assessments without scores' },
-            { key: 'report_stalled',       label: 'Reports stalled in approval', severity: 'red' },
-          ].filter(({ key }) => byType[key]?.length > 0).map(({ key, label, severity='amber', link }) => (
-            <section key={key}>
-              <div className="flex items-center gap-s-3 mb-s-4">
-                <h3 className="font-display text-display-3 text-ink-0">{label}</h3>
-                <Chip variant={severity === 'info' ? 'gold' : severity} dot>{byType[key].length}</Chip>
-                {link && (
-                  <Link to={link} className="ml-auto font-mono text-meta text-gold-400 hover:underline">
+        <div className="space-y-s-3">
+          {(alerts ?? []).map((a) => (
+            <div key={a.id}
+              className="bg-surface-2 border border-line-1 rounded-r-3 px-s-5 py-s-4 flex items-start gap-s-4"
+            >
+              {/* Severity dot */}
+              <span className={`mt-[6px] w-[7px] h-[7px] rounded-full shrink-0 ${
+                a.severity === 'urgent'  ? 'bg-red-400'  :
+                a.severity === 'warning' ? 'bg-amber-400' : 'bg-gold-400'
+              }`} />
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-s-2 flex-wrap mb-s-1">
+                  <Chip variant={SEVERITY_COLOR[a.severity] ?? 'default'} size="sm">
+                    {a.alert_type?.replace(/_/g, ' ')}
+                  </Chip>
+                  <span className="font-mono text-[11px] text-ink-4">
+                    {new Date(a.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })}
+                  </span>
+                </div>
+                <p className="text-[14px] text-ink-0 font-medium">{a.title}</p>
+                {a.body && <p className="text-[13px] text-ink-3 mt-s-1">{a.body}</p>}
+                {a.deep_link && (
+                  <Link
+                    to={a.deep_link}
+                    className="mt-s-2 inline-block font-mono text-[12px] text-gold-400 hover:text-gold-200"
+                  >
                     Review →
                   </Link>
                 )}
               </div>
-              <div className="bg-surface-2 border border-line-2 rounded-r-3 overflow-hidden">
-                {byType[key].map((a,i) => (
-                  <div key={i} className="flex items-start gap-s-3 px-s-4 py-s-3 border-b border-line-2 last:border-0">
-                    <span className={`mt-[6px] w-[6px] h-[6px] rounded-full shrink-0 ${
-                      severity === 'red'  ? 'bg-red-400'  :
-                      severity === 'info' ? 'bg-gold-400' :
-                                           'bg-amber-400'
-                    }`} />
-                    <span className="text-body text-ink-1">{a.message}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
+
+              {/* Dismiss */}
+              <button
+                onClick={() => dismiss.mutate(a.id)}
+                disabled={dismiss.isPending}
+                className="shrink-0 font-mono text-[11px] text-ink-4 hover:text-ink-1 transition-colors mt-[2px]"
+                title="Dismiss this alert"
+              >
+                ✕
+              </button>
+            </div>
           ))}
         </div>
 
-        {(atRisk??[]).length > 0 && (
+        {/* At-risk pupils */}
+        {(atRisk ?? []).length > 0 && (
           <div className="mt-s-8">
             <div className="font-mono text-eyebrow uppercase text-gold-400 mb-s-4">At-risk pupils — 14 day window</div>
             <Card className="bg-surface-2 border-line-2 overflow-hidden">
               <table className="w-full text-left">
-                <thead><tr className="border-b border-line-2">{['Pupil','Class','Absences','Late','Last seen'].map(h=><th key={h} className="font-mono text-eyebrow uppercase text-ink-3 pb-s-3 pr-s-4 text-xs">{h}</th>)}</tr></thead>
+                <thead>
+                  <tr className="border-b border-line-2">
+                    {['Pupil', 'Class', 'Absences', 'Late', 'Last seen'].map((h) => (
+                      <th key={h} className="font-mono text-eyebrow uppercase text-ink-3 pb-s-3 pr-s-4 text-xs">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
                 <tbody>
-                  {atRisk.map(p=>(
+                  {atRisk.map((p) => (
                     <tr key={p.pupil_id} className="border-b border-line-2 last:border-0 hover:bg-surface-3 transition-colors">
                       <td className="py-s-3 pr-s-4 text-body text-ink-0">{p.pupil_name}</td>
                       <td className="py-s-3 pr-s-4 text-body text-ink-2">{p.class_name}</td>
-                      <td className="py-s-3 pr-s-4"><Chip variant={Number(p.absent_count)>=5?'red':'amber'} size="sm">{p.absent_count}</Chip></td>
+                      <td className="py-s-3 pr-s-4">
+                        <Chip variant={Number(p.absent_count) >= 5 ? 'red' : 'amber'} size="sm">{p.absent_count}</Chip>
+                      </td>
                       <td className="py-s-3 pr-s-4 font-mono text-meta text-ink-3">{p.late_count}</td>
-                      <td className="py-s-3 font-mono text-meta text-ink-3">{p.last_seen_date ? new Date(p.last_seen_date).toLocaleDateString('en-NG',{day:'numeric',month:'short'}) : '—'}</td>
+                      <td className="py-s-3 font-mono text-meta text-ink-3">
+                        {p.last_seen_date
+                          ? new Date(p.last_seen_date).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })
+                          : '—'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -548,6 +632,8 @@ function AlertsView() {
     </AppShell>
   );
 }
+
+
 
 // ── Enrolments ────────────────────────────────────────────────────────────────
 function EnrollmentsView() {
@@ -577,7 +663,15 @@ function EnrollmentsView() {
 
 // ── Data fetchers ─────────────────────────────────────────────────────────────
 async function fetchAlerts(schoolId) {
-  const { data, error } = await supabase.from('school_alerts_v').select('*').eq('school_id', schoolId).order('severity');
+  // Query the persistent school_alerts table (not the derived _v view) so
+  // rows have real IDs that can be dismissed with an UPDATE.
+  const { data, error } = await supabase
+    .from('school_alerts')
+    .select('id, alert_type, severity, title, body, entity_id, entity_type, deep_link, created_at')
+    .eq('school_id', schoolId)
+    .is('dismissed_at', null)
+    .order('severity')
+    .order('created_at', { ascending: false });
   if (error) { console.warn('[alerts]', error.message); return []; }
   return data ?? [];
 }

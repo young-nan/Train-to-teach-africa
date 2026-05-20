@@ -112,7 +112,11 @@ export function PublicFooter() {
       <div className="border-t border-line-1">
         <div className="max-w-[1280px] mx-auto px-s-6 lg:px-s-9 py-s-5 flex justify-between flex-wrap gap-s-3 font-mono text-meta tracking-[0.04em] text-ink-3">
           <span>© {new Date().getFullYear()} Train To Teach Africa</span>
-          <span>Built by African educators for African learners.</span>
+          <div className="flex items-center gap-s-5">
+            <Link to="/privacy" className="hover:text-ink-1 transition-colors">Privacy</Link>
+            <Link to="/terms"   className="hover:text-ink-1 transition-colors">Terms</Link>
+            <span>Built by African educators for African learners.</span>
+          </div>
         </div>
       </div>
     </footer>

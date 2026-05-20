@@ -34,6 +34,7 @@ import * as platformService from '@/services/platformService';
 import * as tiersService from '@/services/tiersService';
 import * as tutorService from '@/services/tutorService';
 import { ImpactDashboardView } from './ImpactDashboardView';
+import { AuditLogView }        from './AuditLogView';
 import { LessonContentView }   from './LessonContentView';
 import { TiersView }           from './TiersView';
 
@@ -46,6 +47,7 @@ const NAV = [
   { to: '/app/super/tiers',    label: 'Pricing'   },
   { to: '/app/super/revenue',  label: 'Revenue'   },
   { to: '/app/super/impact',   label: 'Impact'    },
+  { to: '/app/super/audit',    label: 'Audit log' },
 ];
 
 export default function SuperAdminApp() {
@@ -59,6 +61,7 @@ export default function SuperAdminApp() {
       <Route path="tiers"        element={<TiersShell />} />
       <Route path="revenue"      element={<RevenueView />} />
       <Route path="impact"       element={<ImpactShell />} />
+      <Route path="audit"        element={<AuditShell />} />
     </Routes>
   );
 }
@@ -717,6 +720,14 @@ function ImpactShell() {
   return (
     <AppShell title="Impact" navItems={NAV}>
       <ImpactDashboardView />
+    </AppShell>
+  );
+}
+
+function AuditShell() {
+  return (
+    <AppShell title="Audit log" navItems={NAV}>
+      <AuditLogView />
     </AppShell>
   );
 }

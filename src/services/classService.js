@@ -13,6 +13,7 @@ import { logAuditEvent } from './auditService';
  * capacity, pupil_count, teacher_id) for the edit grid.
  */
 export async function listClasses({ schoolId } = {}) {
+  if (!schoolId) return []; // guard: called before profile hydrates
   const { data, error } = await supabase
     .from('classes')
     .select('id, name, level, capacity, pupil_count, teacher_id, school_id, created_at')

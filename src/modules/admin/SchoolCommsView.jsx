@@ -6,7 +6,7 @@
  * Cross-school communications hub for school_admin and head_teacher.
  *
  * Three tabs:
- *   Comms      — all parent_comms entries for the school (CC'd or all)
+ *   Comms     — all parent_comms entries for the school (CC'd or all)
  *   Attendance — all pupils' attendance across all classes, filterable by date
  *   Reports    — all published term report cards for the school
  *
@@ -45,8 +45,9 @@ export function SchoolCommsView() {
       {/* Tab switcher */}
       <div className="flex gap-s-1 bg-surface-2 border border-line-2 rounded-r-2 p-[3px] w-fit mb-s-6">
         {[
-          { id: 'comms',      label: 'Communications' },
-          { id: 'attendance', label: 'Attendance'      },
+          { id: 'comms',      label: 'All comms'       },
+          { id: 'cc',         label: "CC'd to me"      },
+          { id: 'attendance', label: 'Attendance'       },
           { id: 'reports',    label: 'Report cards'    },
         ].map((t) => (
           <button
@@ -65,6 +66,7 @@ export function SchoolCommsView() {
       </div>
 
       {tab === 'comms'      && <CommsTab />}
+      {tab === 'cc'         && <CommsTab ccOnly />}
       {tab === 'attendance' && <AttendanceTab />}
       {tab === 'reports'    && <ReportsTab />}
     </div>
@@ -73,9 +75,9 @@ export function SchoolCommsView() {
 
 // ── Comms tab ─────────────────────────────────────────────────────────────────
 
-function CommsTab() {
+function CommsTab({ ccOnly = false }) {
   const { schoolId } = useAuth();
-  const [filter, setFilter] = useState('all'); // 'all' | 'cc' | 'follow_up'
+  const [filter, setFilter] = useState(ccOnly ? 'cc' : 'all'); // 'all' | 'cc' | 'follow_up'
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'all-comms', schoolId, filter],
@@ -107,8 +109,8 @@ function CommsTab() {
       {/* Filter pills */}
       <div className="flex flex-wrap gap-s-2 mb-s-2">
         {[
-          { id: 'all',        label: 'All notes' },
-          { id: 'cc',         label: "CC'd to you" },
+          { id: 'all',       label: 'All notes' },
+          { id: 'cc',        label: 'CC'd to you' },
           { id: 'follow_up', label: 'Follow-up needed' },
         ].map((f) => (
           <button
@@ -280,7 +282,7 @@ function ReportsTab() {
         .from('report_envelopes')
         .select(`
           id, term, academic_year, status, published_at,
-          pupils(full_name, pupil_code, classes(name), id)
+          pupils(full_name, pupil_code, classes(name))
         `)
         .eq('school_id', schoolId)
         .eq('status', 'published')

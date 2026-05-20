@@ -36,14 +36,22 @@ export async function signInWithPassword({ email, password }) {
  * confirmationRequired is true — the UI must show a "check your email" screen.
  * When confirmation is disabled (dev / magic-link off), session is live.
  */
-export async function signUp({ email, password, fullName, role }) {
+export async function signUp({ email, password, fullName, role, phone, city, state, ...extraMeta }) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { full_name: fullName, role } },
+    options: {
+      data: {
+        full_name: fullName,
+        role,
+        phone:     phone  ?? null,
+        city:      city   ?? null,
+        state:     state  ?? null,
+        ...extraMeta,
+      },
+    },
   });
   if (error) throw mapAuthError(error);
-  // session is null when Supabase requires email confirmation before issuing a session.
   const confirmationRequired = !data.session;
   return { session: data.session, confirmationRequired };
 }

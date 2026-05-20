@@ -10,13 +10,15 @@
  * is asking them to become teachers.
  */
 
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { Link } from 'react-router-dom';
 import { PublicNav } from '@/components/marketing/PublicNav';
 import { PublicFooter } from '@/components/marketing/PublicFooter';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 
-export default function SolutionsParentsPage() {
+export default function SolutionsParentsPage() {  usePageMeta('For Parents — TTA Learn', 'Support your child's learning at home with nightly lesson activities, dinner questions, and term report access.');
+
   return (
     <div className="min-h-dvh bg-surface-1 text-ink-1">
       <PublicNav />

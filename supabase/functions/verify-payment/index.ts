@@ -135,20 +135,71 @@ serve(async (req) => {
   }
 
   // ── 6. Activate subscription ──────────────────────────────────────────────
-  // FIX: pass p_amount_minor so the SQL function stores the amount we
-  // validated here, not a value it computes from its own hardcoded list.
-  // This eliminates the pricing triplication bug: the SQL function is now
-  // a pure executor, not a second source of truth.
-  const { data: subId, error: subErr } = await supabase.rpc('activate_subscription', {
-    p_user_id:      userId,
-    p_plan_code:    planCode,
-    p_payment_id:   payment.id,
-    p_amount_minor: plan.amountMinor,  // ← the fix
-  });
+  // ── 6. Activate subscription ──────────────────────────────────────────────
+  // Teacher plans create a solo school and link it to the teacher.
+  // All other plans go through activate_subscription as before.
+  const isTeacherPlan = planCode.includes('TEACHER');
 
-  if (subErr) {
-    console.error('[verify-payment] activate_subscription failed', subErr);
-    return json({ error: 'Could not activate subscription' }, 500);
+  let subId: string;
+
+  if (isTeacherPlan) {
+    // First record the payment row (same as other paths)
+    const { data: paymentRow, error: payErr2 } = await supabase
+      .from('payments')
+      .upsert(
+        {
+          reference,
+          user_id:      userId,
+          plan_code:    planCode,
+          amount_minor: plan.amountMinor,
+          currency:     plan.currency,
+          status:       'verified',
+          verified_at:  new Date().toISOString(),
+        },
+        { onConflict: 'reference' },
+      )
+      .select()
+      .single();
+
+    if (payErr2) {
+      console.error('[verify-payment] payment upsert failed', payErr2);
+      return json({ error: 'Database error' }, 500);
+    }
+
+    // Activate teacher subscription + create solo school
+    const { data: teacherSubId, error: teacherErr } = await supabase.rpc(
+      'activate_teacher_subscription',
+      {
+        p_user_id:    userId,
+        p_payment_id: paymentRow.id,
+        p_plan_code:  planCode,
+      },
+    );
+
+    if (teacherErr) {
+      console.error('[verify-payment] activate_teacher_subscription failed', teacherErr);
+      return json({ error: 'Could not activate teacher subscription' }, 500);
+    }
+
+    subId = teacherSubId;
+
+  } else {
+    // Parent / school plans: existing path
+    // FIX: pass p_amount_minor so the SQL function stores the amount we
+    // validated here, not a value it computes from its own hardcoded list.
+    const { data: activatedId, error: subErr } = await supabase.rpc('activate_subscription', {
+      p_user_id:      userId,
+      p_plan_code:    planCode,
+      p_payment_id:   payment.id,
+      p_amount_minor: plan.amountMinor,
+    });
+
+    if (subErr) {
+      console.error('[verify-payment] activate_subscription failed', subErr);
+      return json({ error: 'Could not activate subscription' }, 500);
+    }
+
+    subId = activatedId;
   }
 
   // ── 7. Audit log ──────────────────────────────────────────────────────────

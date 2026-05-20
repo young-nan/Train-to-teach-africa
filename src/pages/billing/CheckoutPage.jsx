@@ -105,6 +105,18 @@ export default function CheckoutPage() {
     tier_id:     tierRow.id,
   } : null);
 
+  // ── Loading tier by UUID ───────────────────────────────────────────────────
+  if (tierId && !activePlan) {
+    return (
+      <CheckoutShell>
+        <div className="text-center py-s-10">
+          <div className="w-8 h-8 border-2 border-gold-400 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="mt-s-4 text-body text-ink-3">Loading plan details…</p>
+        </div>
+      </CheckoutShell>
+    );
+  }
+
   // ── Unknown plan ──────────────────────────────────────────────────────────
   if (!activePlan && !tierId) {
     return (

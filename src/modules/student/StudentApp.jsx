@@ -1277,7 +1277,7 @@ function ProfileView() {
   });
 
   return (
-    <AppShell title="My profile" navItems={STUDENT_NAV}>
+    <AppShell title="My profile" navItems={NAV}>
       <div className="max-w-[540px] mx-auto">
         {/* Avatar */}
         <div className="flex flex-col items-center text-center py-s-8">

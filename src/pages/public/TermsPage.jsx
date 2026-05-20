@@ -7,6 +7,7 @@
  * Covers schools, parents, teachers, students, and tutors.
  */
 
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { Link } from 'react-router-dom';
 import { PublicNav } from '@/components/marketing/PublicNav';
 import { PublicFooter } from '@/components/marketing/PublicFooter';
@@ -16,6 +17,7 @@ const EFFECTIVE_DATE = 'January 2025';
 const CONTACT_EMAIL  = 'hello@traintoteachafrica.org';
 
 export default function TermsPage() {
+  usePageMeta('Terms of Use', 'Terms governing your use of Train To Teach Africa products and services.');
   return (
     <div className="min-h-dvh bg-surface-1 text-ink-1">
       <PublicNav />

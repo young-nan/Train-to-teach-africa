@@ -42,7 +42,7 @@ export async function inviteStaff({ mode, email, fullName, role, schoolId, tempo
   if (!STAFF_ROLES.includes(role)) {
     throw new Error(`Invalid staff role: ${role}`);
   }
-  const { data, error } = await supabase.functions.invoke('invite-user', {
+  const { data, error } = await supabase.functions.invoke('Invite-user', {
     body: {
       mode,
       email,
@@ -72,7 +72,7 @@ export async function inviteStaff({ mode, email, fullName, role, schoolId, tempo
  * Same edge function, role='parent' + link_pupil_id.
  */
 export async function inviteParentForPupil({ mode, email, fullName, pupilId, schoolId, temporaryPassword }) {
-  const { data, error } = await supabase.functions.invoke('invite-user', {
+  const { data, error } = await supabase.functions.invoke('Invite-user', {
     body: {
       mode,
       email,

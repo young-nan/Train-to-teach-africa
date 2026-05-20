@@ -17,7 +17,8 @@ import { PublicFooter } from '@/components/marketing/PublicFooter';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 
-export default function SolutionsParentsPage() {  usePageMeta('For Parents — TTA Learn', 'Support your child's learning at home with nightly lesson activities, dinner questions, and term report access.');
+export default function SolutionsParentsPage() {
+  usePageMeta('For Parents — TTA Learn', "Support your child's learning at home with nightly lesson activities, dinner questions, and term report access.");
 
   return (
     <div className="min-h-dvh bg-surface-1 text-ink-1">
@@ -54,12 +55,12 @@ export default function SolutionsParentsPage() {  usePageMeta('For Parents — T
               What you receive.
             </h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-s-5">
-              <Item title="Simple lesson summaries"            body="What your child learned today, in plain English. No teacher-speak." />
-              <Item title="Downloadable learning guides"        body="Print or save PDFs for the days the network is patchy or you want to work offline." />
-              <Item title="Nightly 5-minute activities"         body="A quick thing to do during dinner prep. No special supplies. No printer required." />
-              <Item title="Discussion questions"                body="Three dinner-table questions tied to today's lesson. Keeps the conversation flowing." />
-              <Item title="Academic progress tracking"          body="One screen, three numbers, no jargon. We tell you when something needs attention." />
-              <Item title="Attendance + report cards"           body="See who showed up and who didn't. Read the teacher's term comments the moment they're released." />
+              <Item title="Simple lesson summaries"        body="What your child learned today, in plain English. No teacher-speak." />
+              <Item title="Downloadable learning guides"    body="Print or save PDFs for the days the network is patchy or you want to work offline." />
+              <Item title="Nightly 5-minute activities"     body="A quick thing to do during dinner prep. No special supplies. No printer required." />
+              <Item title="Discussion questions"            body="Three dinner-table questions tied to today's lesson. Keeps the conversation flowing." />
+              <Item title="Academic progress tracking"      body="One screen, three numbers, no jargon. We tell you when something needs attention." />
+              <Item title="Attendance + report cards"       body="See who showed up and who didn't. Read the teacher's term comments the moment they're released." />
             </div>
           </div>
         </section>

@@ -31,10 +31,12 @@
 
 import { useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 import { PLANS, formatPrice, formatUsdEquivalent } from '@/config/pricing';
 import * as paymentService from '@/services/paymentService';
 import { friendlyError } from '@/utils/friendlyError';
@@ -70,13 +72,41 @@ export default function CheckoutPage() {
   const { profile, role, user } = useAuth();
 
   const planCode = params.get('plan')?.toUpperCase();
+  const tierId   = params.get('tier'); // UUID from new signup flow
   const plan     = planCode ? PLANS[planCode] : null;
 
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
 
+  // Fetch tier by UUID when coming from new signup flow
+  const { data: tierRow } = useQuery({
+    queryKey: ['checkout-tier', tierId],
+    queryFn: async () => {
+      if (!tierId) return null;
+      const { data, error } = await supabase
+        .from('subscription_tiers')
+        .select('*')
+        .eq('id', tierId)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!tierId && !plan,
+    staleTime: Infinity,
+  });
+
+  // If we have a tier UUID, synthesise a plan-like object
+  const activePlan = plan ?? (tierRow ? {
+    name:        tierRow.name,
+    audience:    tierRow.audience,
+    period:      tierRow.period,
+    price_minor: tierRow.price_minor,
+    currency:    tierRow.currency,
+    tier_id:     tierRow.id,
+  } : null);
+
   // ── Unknown plan ──────────────────────────────────────────────────────────
-  if (!plan) {
+  if (!activePlan && !tierId) {
     return (
       <CheckoutShell>
         <div className="text-center">
@@ -99,7 +129,7 @@ export default function CheckoutPage() {
   }
 
   // ── School plans — not self-serve ─────────────────────────────────────────
-  if (plan.audience === 'school') {
+  if (activePlan?.audience === 'school') {
     return (
       <CheckoutShell>
         <div className="text-center">
@@ -138,7 +168,7 @@ export default function CheckoutPage() {
         metadata: {
           tta_user_id: user?.id,
           plan_code:   planCode,
-          audience:    plan.audience,
+          audience:    activePlan.audience,
           track:       plan.track,
         },
       });
@@ -187,7 +217,7 @@ export default function CheckoutPage() {
           <div>
             <div className="font-display text-display-3 text-ink-0">{plan.label}</div>
             <div className="mt-s-2 font-mono text-meta text-ink-3">
-              {AUDIENCE_LABEL[plan.audience]} · {TRACK_LABEL[plan.track]}
+              {AUDIENCE_LABEL[activePlan.audience]} · {TRACK_LABEL[plan.track]}
             </div>
           </div>
           <div className="text-right">

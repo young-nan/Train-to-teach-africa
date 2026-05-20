@@ -46,7 +46,7 @@ export function SchoolCommsView() {
       <div className="flex gap-s-1 bg-surface-2 border border-line-2 rounded-r-2 p-[3px] w-fit mb-s-6">
         {[
           { id: 'comms',      label: 'All comms'       },
-          { id: 'cc',         label: "CC'd to me"      },
+          { id: 'cc',          label: "CC'd to me"      },
           { id: 'attendance', label: 'Attendance'       },
           { id: 'reports',    label: 'Report cards'    },
         ].map((t) => (
@@ -110,7 +110,7 @@ function CommsTab({ ccOnly = false }) {
       <div className="flex flex-wrap gap-s-2 mb-s-2">
         {[
           { id: 'all',       label: 'All notes' },
-          { id: 'cc',        label: 'CC'd to you' },
+          { id: 'cc',        label: "CC'd to you" },
           { id: 'follow_up', label: 'Follow-up needed' },
         ].map((f) => (
           <button

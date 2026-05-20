@@ -9,6 +9,7 @@ export const ADMIN_NAV = [
   { to: '/app/admin',                label: 'Overview',       end: true },
   { to: '/app/admin/interventions',  label: 'Interventions'             },
   { to: '/app/admin/comms',          label: 'Comms'                     },
+  { to: '/app/admin/wa-inbox',       label: 'WA inbox'                  },
   { to: '/app/admin/enrollments',    label: 'Enrolments'                },
   { to: '/app/admin/staff',          label: 'Staff'                     },
   { to: '/app/admin/connections',    label: 'Connections'               },
@@ -16,6 +17,7 @@ export const ADMIN_NAV = [
   { to: '/app/admin/terms',          label: 'Terms'                     },
   { to: '/app/admin/alerts',         label: 'Alerts'                    },
   { to: '/app/admin/impact',         label: 'Impact'                    },
+  { to: '/app/admin/audit',          label: 'Audit log'                 },
   { to: '/app/admin/billing',        label: 'Billing'                   },
   { to: '/app/admin/settings',       label: 'Settings'                  },
 ];

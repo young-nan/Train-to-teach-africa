@@ -33,17 +33,7 @@ const TERM_OPTIONS = [
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = [CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1];
 
-const ADMIN_NAV = [
-  { to: '/app/admin',             label: 'Overview',   end: true },
-  { to: '/app/admin/enrollments', label: 'Enrolments' },
-  { to: '/app/admin/staff',       label: 'Staff'       },
-  { to: '/app/admin/connections', label: 'Connections' },
-  { to: '/app/admin/curriculum',  label: 'Curriculum'  },
-  { to: '/app/admin/terms',       label: 'Terms'       },
-  { to: '/app/admin/alerts',      label: 'Alerts'      },
-  { to: '/app/admin/impact',      label: 'Impact'      },
-  { to: '/app/admin/billing',     label: 'Billing'     },
-];
+import { ADMIN_NAV } from '@/modules/admin/adminNav';
 
 export function BillingDashboardView() {
   const { schoolId } = useAuth();

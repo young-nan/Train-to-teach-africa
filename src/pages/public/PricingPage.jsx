@@ -32,6 +32,7 @@
  * - FAQ section unchanged
  */
 
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -91,6 +92,7 @@ const AUDIENCES = [
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function PricingPage() {
+  usePageMeta('Pricing', 'Simple, affordable plans for Nigerian and African schools and families. Pay in Naira or USD.');
   const [track,   setTrack]   = useState('african'); // 'african' | 'international'
   const [cadence, setCadence] = useState('term');    // 'term'    | 'annual'
   const navigate = useNavigate();

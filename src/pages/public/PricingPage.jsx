@@ -36,6 +36,7 @@ import { usePageMeta } from '@/hooks/usePageMeta';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
 import { PublicNav } from '@/components/marketing/PublicNav';
 import { PublicFooter } from '@/components/marketing/PublicFooter';
 import { Button } from '@/components/ui/Button';
@@ -92,10 +93,21 @@ const AUDIENCES = [
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function PricingPage() {
-  usePageMeta('Pricing', 'Simple, affordable plans for Nigerian and African schools and families. Pay in Naira or USD.');
-  const [track,   setTrack]   = useState('african'); // 'african' | 'international'
-  const [cadence, setCadence] = useState('term');    // 'term'    | 'annual'
+  usePageMeta('Pricing', 'Clear, affordable plans for African families and schools. Pay in local currency.');
+  const [track,   setTrack]   = useState('african');
+  const [cadence, setCadence] = useState('term');
   const navigate = useNavigate();
+  const { role }  = useAuth();
+
+  // Authenticated users only see plans relevant to their role
+  const visibleAudiences = role
+    ? AUDIENCES.filter((a) => {
+        if (role === 'parent')       return a.code === 'parent';
+        if (role === 'teacher')      return a.code === 'teacher';
+        if (role === 'school_admin' || role === 'head_teacher') return a.code === 'school';
+        return true; // super_admin, unauthenticated: see all
+      })
+    : AUDIENCES;
 
   // ── Fetch tiers from DB ─────────────────────────────────────────────────
   // No auth required — public endpoint (RLS: active tiers readable by anon).
@@ -178,10 +190,9 @@ export default function PricingPage() {
               <span className="ital-gold">African families and schools.</span>
             </h1>
             <p className="mt-s-5 text-body-l text-ink-2 max-w-[64ch]">
-              African curriculum prices are denominated in Naira and stay
-              fixed — no FX surprises. International curriculum prices are in
-              US Dollars. USD equivalents shown next to NGN are informational
-              estimates.
+              African curriculum prices are in local currency and stay fixed.
+              International curriculum prices are in US Dollars.
+              Choose a plan that fits your family or institution.
             </p>
 
             {/* Stale-fallback notice — small, non-alarmist */}
@@ -228,7 +239,7 @@ export default function PricingPage() {
               <CardSkeleton />
             ) : (
               <div className="grid md:grid-cols-3 gap-s-5">
-                {AUDIENCES.map((aud) => {
+                {visibleAudiences.map((aud) => {
                   const candidates = tiersFor({ audience: aud.code });
                   const tier = candidates[0];
                   if (!tier) return null;

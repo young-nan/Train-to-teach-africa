@@ -17,6 +17,7 @@
  */
 
 import { useState } from 'react';
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { Link } from 'react-router-dom';
 import { PublicNav } from '@/components/marketing/PublicNav';
 import { PublicFooter } from '@/components/marketing/PublicFooter';
@@ -38,6 +39,7 @@ const CURRICULUM_OPTIONS = [
 ];
 
 export default function TutorsPage() {
+  usePageMeta('Find a Tutor', 'Connect with verified tutors for online and in-person sessions across Nigeria.');
   return (
     <div className="min-h-dvh bg-surface-1 text-ink-1">
       <PublicNav />

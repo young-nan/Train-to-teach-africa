@@ -10,6 +10,7 @@
  * Last updated: 2025. Policy version: 1.
  */
 
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { Link } from 'react-router-dom';
 import { PublicNav } from '@/components/marketing/PublicNav';
 import { PublicFooter } from '@/components/marketing/PublicFooter';
@@ -20,6 +21,7 @@ const POLICY_VERSION = '1.0';
 const CONTACT_EMAIL  = 'privacy@traintoteachafrica.org';
 
 export default function PrivacyPage() {
+  usePageMeta('Privacy Policy', 'How Train To Teach Africa collects, uses, and protects your data. NDPA-aligned.');
   return (
     <div className="min-h-dvh bg-surface-1 text-ink-1">
       <PublicNav />

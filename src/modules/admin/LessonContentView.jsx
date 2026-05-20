@@ -109,10 +109,60 @@ function ImporterTab() {
     },
   });
 
-  const processText = useCallback((text) => {
+  const parseCSV = useCallback((text) => {
+    // Minimal RFC-4180 CSV parser — no external dependency.
+    // Expects a header row. Quoted fields with commas are supported.
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) { setParseError('CSV must have a header row and at least one data row.'); return; }
+
+    // Parse a single CSV line into tokens (handles quoted fields)
+    function parseLine(line) {
+      const tokens = [];
+      let cur = ''; let inQuote = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuote && line[i+1] === '"') { cur += '"'; i++; } // escaped quote
+          else inQuote = !inQuote;
+        } else if (ch === ',' && !inQuote) {
+          tokens.push(cur.trim()); cur = '';
+        } else {
+          cur += ch;
+        }
+      }
+      tokens.push(cur.trim());
+      return tokens;
+    }
+
+    const headers = parseLine(lines[0]).map((h) => h.toLowerCase().replace(/\s+/g, '_'));
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const values = parseLine(lines[i]);
+      const obj = {};
+      headers.forEach((h, idx) => { obj[h] = values[idx] ?? ''; });
+      // Normalise common CSV column names to lesson schema field names
+      if (obj.curriculum_code === undefined && obj.code !== undefined) obj.curriculum_code = obj.code;
+      if (obj.week_of_term   === undefined && obj.week !== undefined)  obj.week_of_term   = obj.week;
+      if (obj.estimated_minutes === undefined && obj.minutes !== undefined) obj.estimated_minutes = obj.minutes;
+      rows.push(obj);
+    }
+
+    if (rows.length === 0) { setParseError('No data rows found in CSV.'); return; }
+    if (rows.length > 200) { setParseError('Maximum 200 lessons per batch. Split the file.'); return; }
+    setParseError(null);
+    setParsed(rows);
+  }, []);
+
+  const processText = useCallback((text, filename = '') => {
     setParseError(null);
     setParsed(null);
     setImportResult(null);
+    const isCSV = filename.toLowerCase().endsWith('.csv') || text.trimStart().startsWith('"') && !text.trimStart().startsWith('"level":{');
+    if (isCSV) {
+      parseCSV(text);
+      return;
+    }
     try {
       const json = JSON.parse(text);
       const arr = Array.isArray(json) ? json : [json];
@@ -120,15 +170,20 @@ function ImporterTab() {
       if (arr.length > 200) { setParseError('Maximum 200 lessons per batch. Split the file.'); return; }
       setParsed(arr);
     } catch {
-      setParseError('Invalid JSON. Make sure the file is a valid JSON array of lesson objects.');
+      // Fallback: try CSV if JSON fails
+      if (text.includes(',') && text.includes('\n')) {
+        parseCSV(text);
+      } else {
+        setParseError('Invalid file. Paste a JSON array or drop a .csv file with a header row.');
+      }
     }
-  }, []);
+  }, [parseCSV]);
 
   const onFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => processText(ev.target.result);
+    reader.onload = (ev) => processText(ev.target.result, file.name);
     reader.readAsText(file);
   };
 
@@ -138,7 +193,7 @@ function ImporterTab() {
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => processText(ev.target.result);
+    reader.onload = (ev) => processText(ev.target.result, file.name);
     reader.readAsText(file);
   }, [processText]);
 
@@ -178,17 +233,17 @@ function ImporterTab() {
         >
           <div className="text-[36px] mb-s-3">📂</div>
           <p className="text-[15px] text-ink-1 font-medium mb-s-2">
-            Drop a <code className="font-mono text-gold-200">.json</code> file here
+            Drop a <code className="font-mono text-gold-200">.json</code> or <code className="font-mono text-gold-200">.csv</code> file here
           </p>
           <p className="text-[13px] text-ink-3 mb-s-4">
             or click to browse · or paste JSON directly into this area
           </p>
-          <Chip variant="default" size="sm">Supports single lesson objects or arrays up to 200 rows</Chip>
+          <Chip variant="default" size="sm">JSON array or CSV with header row · max 200 rows per batch</Chip>
           <input
             id="lesson-file-input"
             ref={fileRef}
             type="file"
-            accept=".json,application/json"
+            accept=".json,.csv,application/json,text/csv"
             className="sr-only"
             onChange={onFileChange}
           />

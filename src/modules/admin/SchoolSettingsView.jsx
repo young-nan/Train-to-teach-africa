@@ -432,15 +432,20 @@ function SchoolConsentCard({ schoolId }) {
                   {meta.required ? (
                     <span className="font-mono text-[11px] text-green-400">✓ Always on</span>
                   ) : (
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={granted}
-                        onChange={(e) => toggle.mutate({ type, granted: e.target.checked })}
-                        className="sr-only peer"
-                      />
-                      <div className="w-[38px] h-[21px] bg-surface-3 peer-checked:bg-gold-400/60 rounded-full transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-[17px] after:w-[17px] after:transition-all peer-checked:after:translate-x-[17px]" />
-                    </label>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={granted}
+                      onClick={() => toggle.mutate({ type, granted: !granted })}
+                      disabled={toggle.isPending}
+                      className={`relative inline-flex h-[22px] w-[42px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gold-400 focus:ring-offset-2 focus:ring-offset-surface-2 disabled:opacity-50 ${
+                        granted ? 'bg-gold-400' : 'bg-surface-4'
+                      }`}
+                    >
+                      <span className={`pointer-events-none inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                        granted ? 'translate-x-[20px]' : 'translate-x-0'
+                      }`} />
+                    </button>
                   )}
                 </div>
               </div>

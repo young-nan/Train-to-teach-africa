@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { useAuth } from '@/hooks/useAuth';
 import * as impactService from '@/services/impactService';
+import * as consentService from '@/services/consentService';
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 // ImpactDashboardView renders its content only — the AppShell wrapper is
@@ -119,7 +120,20 @@ function SuperAdminImpact() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch which schools have opted into anonymized research.
+  // The league table and network KPIs only include consenting schools.
+  const { data: researchConsented } = useQuery({
+    queryKey: ['consent', 'research-schools'],
+    queryFn:  consentService.getResearchConsentedSchools,
+    staleTime: 10 * 60 * 1000,
+  });
+
   if (isLoading) return <LoadingSkeleton />;
+
+  // Split: all schools for operational overview, consented schools for benchmarks
+  const consentedSchools = researchConsented
+    ? (allSchools ?? []).filter((s) => researchConsented.has(s.school_id))
+    : (allSchools ?? []);
 
   const totals = {
     pupil_count:           allSchools?.reduce((a, s) => a + (s.pupil_count ?? 0), 0) ?? 0,
@@ -150,11 +164,16 @@ function SuperAdminImpact() {
 
       {/* School league table */}
       <Card className="bg-surface-2 border-line-2">
-        <div className="flex items-center justify-between mb-s-5">
+        <div className="flex items-center justify-between mb-s-5 flex-wrap gap-s-3">
           <div className="font-mono text-eyebrow uppercase text-gold-400">All schools</div>
-          <span className="font-mono text-meta text-ink-3">
-            Sorted by pupil count
-          </span>
+          <div className="flex items-center gap-s-4">
+            {researchConsented && (
+              <span className="font-mono text-[11px] text-gold-400 border border-gold-400/25 px-s-2 py-[2px] rounded-sm">
+                {consentedSchools.length}/{allSchools?.length ?? 0} in research
+              </span>
+            )}
+            <span className="font-mono text-meta text-ink-3">Sorted by pupil count</span>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -171,7 +190,12 @@ function SuperAdminImpact() {
               {(allSchools ?? []).map((s) => (
                 <tr key={s.school_id} className="border-b border-line-2 last:border-0 hover:bg-surface-3 transition-colors">
                   <td className="py-s-3 pr-s-5">
-                    <div className="text-body text-ink-0">{s.school_name}</div>
+                    <div className="flex items-center gap-s-2">
+                      <div className="text-body text-ink-0">{s.school_name}</div>
+                      {researchConsented?.has(s.school_id) && (
+                        <span className="font-mono text-[9px] text-gold-400 border border-gold-400/20 px-[4px] py-[1px] rounded-sm shrink-0" title="Opted into research">R</span>
+                      )}
+                    </div>
                     {s.slug && (
                       <div className="font-mono text-meta text-ink-3">/impact/{s.slug}</div>
                     )}
@@ -462,6 +486,15 @@ function ExportBar({ schoolId, schoolName }) {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [error,      setError]      = useState(null);
 
+  // Only show full export if the school has opted into research
+  const { data: consents } = useQuery({
+    queryKey: ['school-consents', schoolId],
+    queryFn:  () => consentService.getSchoolConsents(schoolId),
+    staleTime: 60_000,
+  });
+
+  const hasResearchConsent = consents?.anonymized_research === true;
+
   async function handleCsv() {
     setCsvLoading(true); setError(null);
     try { await impactService.downloadImpactCsv({ schoolId, schoolName }); }
@@ -478,21 +511,41 @@ function ExportBar({ schoolId, schoolName }) {
 
   return (
     <Card className="bg-surface-2 border-gold-400/20">
-      <div className="flex flex-wrap items-center justify-between gap-s-5">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-s-5">
+        <div className="flex-1">
           <div className="font-mono text-eyebrow uppercase text-gold-400">Grant reports</div>
           <p className="mt-s-2 text-body text-ink-2 max-w-[55ch]">
             Export anonymised outcome data for grant applications, NGO partnerships,
             and funding reports. No pupil or parent information is included.
           </p>
+          {!hasResearchConsent && (
+            <div className="mt-s-3 flex items-start gap-s-2 text-[13px] text-amber-400">
+              <span>⚠</span>
+              <span>
+                Your school has not opted into anonymised research.
+                Enable it in{' '}
+                <a href="/app/admin/settings" className="underline hover:text-amber-200">
+                  School Settings → Data &amp; Privacy
+                </a>{' '}
+                to allow TTA to use your data in grant reports and network benchmarks.
+              </span>
+            </div>
+          )}
         </div>
-        <div className="flex gap-s-3">
-          <Button intent="ghost" onClick={handleCsv} disabled={csvLoading}>
-            {csvLoading ? 'Preparing…' : 'Download CSV'}
-          </Button>
-          <Button intent="primary" onClick={handlePdf} disabled={pdfLoading}>
-            {pdfLoading ? 'Generating…' : 'Download PDF report'}
-          </Button>
+        <div className="flex flex-col gap-s-2 items-end">
+          <div className="flex gap-s-3">
+            <Button intent="ghost" onClick={handleCsv} disabled={csvLoading || !hasResearchConsent}>
+              {csvLoading ? 'Preparing…' : 'Download CSV'}
+            </Button>
+            <Button intent="primary" onClick={handlePdf} disabled={pdfLoading || !hasResearchConsent}>
+              {pdfLoading ? 'Generating…' : 'Download PDF report'}
+            </Button>
+          </div>
+          {!hasResearchConsent && (
+            <span className="font-mono text-[11px] text-ink-4">
+              Enable research consent to unlock exports
+            </span>
+          )}
         </div>
       </div>
       {error && (

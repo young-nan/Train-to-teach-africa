@@ -6,6 +6,7 @@
  * partner / contact surface.
  */
 
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { Link } from 'react-router-dom';
 import { PublicNav } from '@/components/marketing/PublicNav';
 import { PublicFooter } from '@/components/marketing/PublicFooter';
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 
 export default function AboutPage() {
+  usePageMeta('About TTA', 'Train To Teach Africa — building ethical educational infrastructure for African schools.');
   return (
     <div className="min-h-dvh bg-surface-1 text-ink-1">
       <PublicNav />

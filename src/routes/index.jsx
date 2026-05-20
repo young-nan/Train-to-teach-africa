@@ -28,6 +28,7 @@ const TutorsPage            = lazy(() => import('@/pages/public/TutorsPage'));
 const PublicImpactPage      = lazy(() => import('@/pages/public/PublicImpactPage'));
 const PrivacyPage           = lazy(() => import('@/pages/public/PrivacyPage'));
 const TermsPage             = lazy(() => import('@/pages/public/TermsPage'));
+const NotFoundPage          = lazy(() => import('@/pages/public/NotFoundPage'));
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const SignInPage        = lazy(() => import('@/pages/auth/SignInPage'));

@@ -333,15 +333,20 @@ function PrivacyConsent() {
                 {meta.required ? (
                   <span className="font-mono text-[12px] text-green-400">✓ Always on</span>
                 ) : (
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={granted}
-                      onChange={(e) => toggle.mutate({ type, granted: e.target.checked })}
-                      className="sr-only peer"
-                    />
-                    <div className="w-[40px] h-[22px] bg-surface-3 peer-checked:bg-gold-400/60 rounded-full peer-focus:ring-2 peer-focus:ring-gold-400/30 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-[18px] after:w-[18px] after:transition-all peer-checked:after:translate-x-[18px]" />
-                  </label>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={granted}
+                    onClick={() => toggle.mutate({ type, granted: !granted })}
+                    disabled={toggle.isPending}
+                    className={`relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gold-400 focus:ring-offset-2 focus:ring-offset-surface-2 disabled:opacity-50 ${
+                      granted ? 'bg-gold-400' : 'bg-surface-4'
+                    }`}
+                  >
+                    <span className={`pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      granted ? 'translate-x-[20px]' : 'translate-x-0'
+                    }`} />
+                  </button>
                 )}
               </div>
             </div>

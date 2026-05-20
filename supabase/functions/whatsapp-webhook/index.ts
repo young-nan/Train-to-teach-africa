@@ -118,13 +118,24 @@ interface MetaStatus {
   errors?:                 Array<{ code: number; title: string }>;
 }
 
+interface MetaInboundMessage {
+  id:        string;           // Meta's wamid
+  from:      string;           // sender's phone number (E.164)
+  timestamp: string;
+  type:      string;           // text | image | audio | document | etc.
+  text?:     { body: string };
+  image?:    { id: string; mime_type: string; sha256: string; caption?: string };
+  audio?:    { id: string; mime_type: string };
+  document?: { id: string; mime_type: string; filename?: string; caption?: string };
+}
+
 interface MetaPayload {
   object: string;
   entry: Array<{
     changes: Array<{
       value: {
-        statuses?: MetaStatus[];
-        messages?: unknown[];  // inbound messages — we don't handle these yet
+        statuses?:  MetaStatus[];
+        messages?:  MetaInboundMessage[];
       };
     }>;
   }>;
@@ -197,19 +208,19 @@ Deno.serve(async (req) => {
     return json({ ok: true, ignored: "non_waba_object" });
   }
 
-  // Collect all status entries across all entries/changes
-  const statuses: MetaStatus[] = [];
+  // Collect status entries and inbound messages separately
+  const statuses: MetaStatus[]         = [];
+  const inboundMsgs: MetaInboundMessage[] = [];
+
   for (const entry of payload.entry ?? []) {
     for (const change of entry.changes ?? []) {
       for (const s of change.value?.statuses ?? []) {
         statuses.push(s);
       }
+      for (const m of change.value?.messages ?? []) {
+        inboundMsgs.push(m as MetaInboundMessage);
+      }
     }
-  }
-
-  if (statuses.length === 0) {
-    // Could be an inbound message event — acknowledge and skip
-    return json({ ok: true, processed: 0 });
   }
 
   // Service-role client — bypasses RLS for cross-table updates
@@ -219,6 +230,41 @@ Deno.serve(async (req) => {
 
   let processed = 0;
   let skipped   = 0;
+
+  // ── Store inbound messages ─────────────────────────────────────────────────
+  // Resolve parent by phone number, then insert into wa_inbound_messages.
+  for (const msg of inboundMsgs) {
+    const body = msg.type === 'text' ? msg.text?.body : null;
+    const msgType = msg.type ?? 'text';
+
+    // Try to resolve the sending parent by phone number
+    const { data: optIn } = await admin
+      .from('whatsapp_opt_ins')
+      .select('parent_user_id, school_id:profiles(school_id)')
+      .eq('phone_e164', msg.from)
+      .eq('active', true)
+      .maybeSingle();
+
+    await admin.from('wa_inbound_messages').upsert({
+      wamid:        msg.id,
+      from_number:  msg.from,
+      body,
+      message_type: msgType,
+      received_at:  new Date(parseInt(msg.timestamp, 10) * 1000).toISOString(),
+      parent_id:    optIn?.parent_user_id ?? null,
+      school_id:    (optIn?.school_id as any)?.school_id ?? null,
+    }, { onConflict: 'wamid', ignoreDuplicates: true });
+
+    processed++;
+  }
+
+  if (statuses.length === 0 && inboundMsgs.length === 0) {
+    return json({ ok: true, processed: 0 });
+  }
+
+  if (statuses.length === 0) {
+    return json({ ok: true, processed, skipped });
+  }
 
   for (const status of statuses) {
     const wamid      = status.id;

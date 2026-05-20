@@ -37,6 +37,8 @@ export async function signInWithPassword({ email, password }) {
  * When confirmation is disabled (dev / magic-link off), session is live.
  */
 export async function signUp({ email, password, fullName, role, phone, city, state, ...extraMeta }) {
+  // NOTE: profiles table has: user_id, full_name, email, phone, role, school_id, avatar_url
+  // city and state are NOT profile columns — stored in raw_user_meta_data only for reference.
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -44,9 +46,9 @@ export async function signUp({ email, password, fullName, role, phone, city, sta
       data: {
         full_name: fullName,
         role,
-        phone:     phone  ?? null,
-        city:      city   ?? null,
-        state:     state  ?? null,
+        phone:  phone  ?? null,
+        city:   city   ?? null,   // stored in metadata only
+        state:  state  ?? null,   // stored in metadata only
         ...extraMeta,
       },
     },

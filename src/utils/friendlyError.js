@@ -14,6 +14,11 @@
  */
 
 const MATCHERS = [
+  // Missing schoolId — service called before auth profile hydrated
+  {
+    test: (msg) => /missing school(id)?/i.test(msg),
+    message: () => 'Your account is still loading. Please wait a moment and try again.',
+  },
   // Missing RPC — usually means a migration wasn't applied
   {
     test: (msg) => /could not find the function/i.test(msg) || /PGRST202/i.test(msg),

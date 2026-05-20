@@ -19,6 +19,7 @@
  * once per display heading — the editorial flourish from the design system.
  */
 
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { Link } from 'react-router-dom';
 import { PublicNav } from '@/components/marketing/PublicNav';
 import { PublicFooter } from '@/components/marketing/PublicFooter';
@@ -26,7 +27,8 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { useImpactMetrics } from '@/hooks/useImpactMetrics';
 
-export default function HomePage() {
+export default function HomePage() {  usePageMeta('Train To Teach Africa', 'The operating system for African education. Curriculum-aligned digital learning and school management for Nigerian schools and families.');
+
   return (
     <div className="min-h-dvh bg-surface-1 text-ink-1">
       <PublicNav />

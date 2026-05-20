@@ -9,6 +9,7 @@
  * works, who supports them, and how long onboarding takes.
  */
 
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { Link } from 'react-router-dom';
 import { PublicNav } from '@/components/marketing/PublicNav';
 import { PublicFooter } from '@/components/marketing/PublicFooter';
@@ -17,7 +18,8 @@ import { Chip } from '@/components/ui/Chip';
 
 const DEMO_MAILTO = 'mailto:support@traintoteachafrica.org?subject=School%20demo';
 
-export default function SolutionsSchoolsPage() {
+export default function SolutionsSchoolsPage() {  usePageMeta('For Schools — TTA SIMS', 'Attendance, gradebook, term reports, and parent communication for Nigerian schools. One platform, every class.');
+
   return (
     <div className="min-h-dvh bg-surface-1 text-ink-1">
       <PublicNav />

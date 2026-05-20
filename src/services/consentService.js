@@ -174,3 +174,21 @@ export async function schoolHasConsent(schoolId, consentType) {
     .maybeSingle();
   return data?.granted === true;
 }
+
+/**
+ * Fetch all school_ids that have granted anonymized_research consent.
+ * Used by the super_admin impact view to filter the network league table
+ * and by the export pipeline to exclude non-consenting schools.
+ * Returns a Set<string> of school_id UUIDs for O(1) lookup.
+ */
+export async function getResearchConsentedSchools() {
+  const { data, error } = await supabase
+    .from('consent_records')
+    .select('school_id')
+    .eq('consent_type', 'anonymized_research')
+    .eq('granted', true)
+    .not('school_id', 'is', null);
+
+  if (error) throw new Error(`Could not load research consents: ${error.message}`);
+  return new Set((data ?? []).map((r) => r.school_id));
+}

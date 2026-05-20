@@ -58,15 +58,24 @@ const ROLE_OPTIONS = [
   },
 ];
 
-const NIGERIAN_STATES = [
+const STATES_LIST = [
+  // Nigeria
   'Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno',
   'Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT','Gombe','Imo',
   'Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa',
   'Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba',
   'Yobe','Zamfara',
+  // Ghana
+  'Greater Accra','Ashanti','Northern','Western','Eastern','Central','Volta',
+  // Kenya
+  'Nairobi','Mombasa','Kisumu','Nakuru','Eldoret',
+  // South Africa
+  'Gauteng','Western Cape','KwaZulu-Natal','Eastern Cape',
+  // Other
+  'Other',
 ];
 
-const CURRICULA = ['Nigerian (NERDC)','Cambridge','IB','Montessori','Other'];
+const CURRICULA = ['African (National)','Cambridge','IB','Montessori','French Curriculum','Other'];
 const SUBJECTS  = [
   'English Language','Mathematics','Basic Science','Social Studies','Yoruba',
   'Igbo','Hausa','French','Creative Arts','Computer Studies','Physics',
@@ -312,8 +321,8 @@ export default function SignUpPage() {
             {/* PARENT fields */}
             {role === 'parent' && <>
               <Field label="City" type="text" value={city} onChange={setCity}
-                placeholder="Lagos" required />
-              <SelectField label="State" value={state} onChange={setState} options={NIGERIAN_STATES} />
+                placeholder="e.g. Lagos" required />
+              <SelectField label="State or region" value={state} onChange={setState} options={STATES_LIST} />
               <Field label="Number of children" type="number" value={childCount}
                 onChange={setChildCount} min="1" max="10" required />
               <Field label="Children's school levels (optional)" type="text"
@@ -326,8 +335,8 @@ export default function SignUpPage() {
             {/* TEACHER fields */}
             {role === 'teacher' && <>
               <Field label="City" type="text" value={city} onChange={setCity}
-                placeholder="Abuja" required />
-              <SelectField label="State" value={state} onChange={setState} options={NIGERIAN_STATES} />
+                placeholder="e.g. Abuja" required />
+              <SelectField label="State or region" value={state} onChange={setState} options={STATES_LIST} />
               <SelectField label="Primary subject" value={teachSubject}
                 onChange={setTeachSubject} options={['', ...SUBJECTS]}
                 required placeholder="Select a subject" />
@@ -342,8 +351,8 @@ export default function SignUpPage() {
               <Field label="School name" type="text" value={schoolName}
                 onChange={setSchoolName} placeholder="Greenfield Academy" required />
               <Field label="City" type="text" value={city} onChange={setCity}
-                placeholder="Lagos" required />
-              <SelectField label="State" value={state} onChange={setState} options={NIGERIAN_STATES} />
+                placeholder="e.g. Lagos" required />
+              <SelectField label="State or region" value={state} onChange={setState} options={STATES_LIST} />
               <SelectField label="School type" value={schoolType} onChange={setSchoolType}
                 options={['', 'Private', 'Public', 'International', 'Mission']}
                 required placeholder="Select school type" />
@@ -354,8 +363,8 @@ export default function SignUpPage() {
             {/* TUTOR fields */}
             {role === 'tutor' && <>
               <Field label="City" type="text" value={city} onChange={setCity}
-                placeholder="Port Harcourt" required />
-              <SelectField label="State" value={state} onChange={setState} options={NIGERIAN_STATES} />
+                placeholder="e.g. Accra, Nairobi" required />
+              <SelectField label="State or region" value={state} onChange={setState} options={STATES_LIST} />
               <SelectField label="Primary subject" value={teachSubject}
                 onChange={setTeachSubject} options={['', ...SUBJECTS]}
                 required placeholder="Select a subject" />

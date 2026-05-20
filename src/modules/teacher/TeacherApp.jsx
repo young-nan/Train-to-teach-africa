@@ -31,11 +31,13 @@ import { QuickActionCard, QuickActionGrid } from '@/components/ui/QuickActionCar
 import { useAuth } from '@/hooks/useAuth';
 import { useAttendance } from '@/hooks/useAttendance';
 import { SchoolInterventionsView } from '@/modules/admin/SchoolInterventionsView';
+import { TeacherSubscribeView }     from './TeacherSubscribeView';
 import * as simsService from '@/services/simsService';
 import * as reportsService from '@/services/reportsService';
 import { supabase } from '@/lib/supabase';
 import { CommsView } from '@/modules/sims/CommsView';
 
+// Full nav — only shown when teacher has a school (subscribed or school-assigned)
 const NAV = [
   { to: '/app/teacher',                  label: 'Dashboard',     end: true },
   { to: '/app/teacher/attendance',       label: 'Attendance'               },
@@ -45,9 +47,28 @@ const NAV = [
   { to: '/app/teacher/interventions',    label: 'Interventions'            },
 ];
 
+// Free-tier nav — solo teacher with no school yet
+const NAV_FREE = [
+  { to: '/app/teacher',           label: 'Dashboard',   end: true },
+  { to: '/app/teacher/subscribe', label: '⭐ Subscribe'            },
+];
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 export default function TeacherApp() {
+  const { schoolId } = useAuth();
+
+  // Solo teacher (signed up independently, not yet subscribed / no school assigned)
+  if (!schoolId) {
+    return (
+      <Routes>
+        <Route index          element={<SoloTeacherGate />} />
+        <Route path="subscribe" element={<TeacherSubscribeView />} />
+        <Route path="*"       element={<SoloTeacherGate />} />
+      </Routes>
+    );
+  }
+
   return (
     <Routes>
       <Route index                   element={<TeacherDashboard />} />
@@ -62,6 +83,71 @@ export default function TeacherApp() {
         </AppShell>
       } />
     </Routes>
+  );
+}
+
+// ── Solo teacher gate ─────────────────────────────────────────────────────────
+
+function SoloTeacherGate() {
+  const navigate = useNavigate();
+  return (
+    <AppShell title="Dashboard" navItems={NAV_FREE}>
+      <div className="max-w-[700px]">
+        <div className="mb-s-8">
+          <div className="font-mono text-eyebrow uppercase text-gold-400">Independent teacher</div>
+          <h2 className="mt-s-3 font-display text-display-2 text-ink-0">
+            Welcome to TTA. Let's set up your classroom.
+          </h2>
+          <p className="mt-s-3 text-body text-ink-2 max-w-[54ch]">
+            You signed up as an independent teacher. Subscribe to unlock your
+            own private classroom — enrol pupils, record attendance, enter
+            grades, and produce report cards.
+          </p>
+        </div>
+
+        {/* Free preview */}
+        <div className="bg-surface-2 border border-line-2 rounded-r-3 p-s-5 mb-s-5">
+          <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3 mb-s-3">
+            Free preview — available now
+          </div>
+          <div className="space-y-s-2">
+            {[
+              '3 sample curriculum-aligned lessons (read only)',
+              'Sample attendance register (view only)',
+              'Sample report card template (view only)',
+              'Full lesson library browsing',
+            ].map((f) => (
+              <div key={f} className="flex items-center gap-s-2 text-[13px] text-ink-2">
+                <span className="text-gold-400">→</span> {f}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Premium locked features */}
+        <div className="bg-gold-400/10 border border-gold-400/25 rounded-r-3 p-s-5 mb-s-6">
+          <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-gold-400 mb-s-3">
+            Premium — unlocked after subscribing
+          </div>
+          <div className="grid sm:grid-cols-2 gap-s-2">
+            {[
+              '✓ Private classroom, up to 60 pupils',
+              '✓ Attendance marking and tracking',
+              '✓ Gradebook and score entry',
+              '✓ Term reports and print to PDF',
+              '✓ Parent communications',
+              '✓ Intervention tracking',
+            ].map((f) => (
+              <div key={f} className="text-[13px] text-ink-1">{f}</div>
+            ))}
+          </div>
+        </div>
+
+        <Button intent="primary" onClick={() => navigate('/app/teacher/subscribe')}>
+          See plans and subscribe →
+        </Button>
+      </div>
+    </AppShell>
   );
 }
 

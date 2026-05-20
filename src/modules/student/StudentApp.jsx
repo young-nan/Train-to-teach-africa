@@ -38,10 +38,11 @@ import { useAuth } from '@/hooks/useAuth';
 import * as studentService from '@/services/studentService';
 
 const NAV = [
-  { to: '/app/student',          label: 'Today',   end: true },
-  { to: '/app/student/roadmap',  label: 'Roadmap'  },
-  { to: '/app/student/library',  label: 'Library'  },
-  { to: '/app/student/badges',   label: 'Badges'   },
+  { to: '/app/student',          label: 'Today',    end: true },
+  { to: '/app/student/roadmap',  label: 'Roadmap'             },
+  { to: '/app/student/library',  label: 'Library'             },
+  { to: '/app/student/badges',   label: 'Badges'              },
+  { to: '/app/student/profile',  label: 'My profile'          },
 ];
 
 // ── Router ────────────────────────────────────────────────────────────────────
@@ -54,6 +55,7 @@ export default function StudentApp() {
       <Route path="roadmap"              element={<RoadmapView />} />
       <Route path="library"             element={<LibraryView />} />
       <Route path="badges"               element={<BadgesView />} />
+      <Route path="profile"              element={<ProfileView />} />
     </Routes>
   );
 }
@@ -1235,6 +1237,105 @@ function BadgesView() {
  * Students authenticate with pupil_code + PIN. The JWT contains pupil_code.
  * We fetch the pupil row to get the UUID.
  */
+// ── Profile view ──────────────────────────────────────────────────────────────
+
+function ProfileView() {
+  const { pupilId, pupilName, level } = useStudentIdentity();
+  const navigate = useNavigate();
+
+  const { data: progress } = useQuery({
+    queryKey:  ['student', pupilId, 'progress-summary'],
+    queryFn:   async () => {
+      const { supabase: sb } = await import('@/lib/supabase');
+      const { data } = await sb
+        .from('lesson_progress')
+        .select('status')
+        .eq('pupil_id', pupilId);
+      const rows = data ?? [];
+      return {
+        completed: rows.filter((r) => r.status === 'completed').length,
+        started:   rows.filter((r) => r.status === 'started').length,
+        total:     rows.length,
+      };
+    },
+    enabled: !!pupilId,
+    staleTime: 60_000,
+  });
+
+  const { data: badgeCount } = useQuery({
+    queryKey:  ['student', pupilId, 'badge-count'],
+    queryFn:   async () => {
+      const { supabase: sb } = await import('@/lib/supabase');
+      const { count } = await sb
+        .from('earned_badges')
+        .select('*', { count: 'exact', head: true })
+        .eq('pupil_id', pupilId);
+      return count ?? 0;
+    },
+    enabled: !!pupilId,
+    staleTime: 60_000,
+  });
+
+  return (
+    <AppShell title="My profile" navItems={STUDENT_NAV}>
+      <div className="max-w-[540px] mx-auto">
+        {/* Avatar */}
+        <div className="flex flex-col items-center text-center py-s-8">
+          <div className="w-[80px] h-[80px] rounded-full bg-gold-400/20 border-2 border-gold-400/40 grid place-items-center mb-s-4">
+            <span className="font-display text-[36px] text-gold-200">
+              {pupilName?.[0]?.toUpperCase() ?? '?'}
+            </span>
+          </div>
+          <h2 className="font-display text-display-2 text-ink-0">{pupilName ?? '…'}</h2>
+          {level && (
+            <div className="mt-s-2 font-mono text-[13px] text-ink-3">
+              {level.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+            </div>
+          )}
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-s-4 mb-s-6">
+          {[
+            { label: 'Completed', value: progress?.completed ?? '—' },
+            { label: 'In progress', value: progress?.started   ?? '—' },
+            { label: 'Badges',     value: badgeCount            ?? '—' },
+          ].map(({ label, value }) => (
+            <div key={label} className="bg-surface-2 border border-line-1 rounded-r-3 p-s-4 text-center">
+              <div className="font-display text-[28px] text-ink-0 leading-none">{value}</div>
+              <div className="font-mono text-[11px] text-ink-3 mt-s-1 uppercase tracking-[0.1em]">{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Quick links */}
+        <div className="space-y-s-3">
+          {[
+            { label: '🏅 View my badges',      to: '/app/student/badges'  },
+            { label: '🗺️ See term roadmap',     to: '/app/student/roadmap' },
+            { label: '📖 Browse all lessons',   to: '/app/student/library' },
+          ].map(({ label, to }) => (
+            <button
+              key={to}
+              onClick={() => navigate(to)}
+              className="w-full flex items-center gap-s-3 bg-surface-2 border border-line-1 rounded-r-2 px-s-5 py-s-4 text-[14px] text-ink-1 hover:border-gold-400/40 hover:bg-surface-3 transition-all text-left"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Info note */}
+        <p className="mt-s-6 text-center font-mono text-[11px] text-ink-4">
+          To change your name or PIN, ask your teacher or school admin.
+        </p>
+      </div>
+    </AppShell>
+  );
+}
+
+// ── Student identity hook ─────────────────────────────────────────────────────
+
 function useStudentIdentity() {
   const { user } = useAuth();
 

@@ -30,6 +30,7 @@
  * - Subscription status of any user
  */
 
+import { usePageMeta } from '@/hooks/usePageMeta';
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import * as impactService from '@/services/impactService';

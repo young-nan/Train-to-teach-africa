@@ -328,10 +328,10 @@ function ImporterTab() {
                 {parsed.slice(0, 20).map((l, i) => (
                   <tr key={i} className="border-b border-line-1 hover:bg-surface-2/50">
                     <td className="px-s-4 py-s-3 text-ink-4">{i + 1}</td>
-                    <td className="px-s-4 py-s-3 text-ink-1">{l.title ?? <span className="text-red-400">missing</span>}</td>
-                    <td className="px-s-4 py-s-3 text-ink-3">{l.level ?? '—'}</td>
-                    <td className="px-s-4 py-s-3 text-ink-3">{l.subject ?? '—'}</td>
-                    <td className="px-s-4 py-s-3 font-mono text-ink-4 text-[11px]">{l.curriculumCode ?? '—'}</td>
+                    <td className="px-s-4 py-s-3 text-ink-1">{String(l.title ?? '') || <span className="text-red-400">missing</span>}</td>
+                    <td className="px-s-4 py-s-3 text-ink-3">{String(l.level ?? '') || '—'}</td>
+                    <td className="px-s-4 py-s-3 text-ink-3">{String(l.subject ?? '') || '—'}</td>
+                    <td className="px-s-4 py-s-3 font-mono text-ink-4 text-[11px]">{String(l.curriculumCode ?? '') || '—'}</td>
                   </tr>
                 ))}
                 {parsed.length > 20 && (
@@ -521,9 +521,9 @@ function BrowserTab() {
                       {String(l.subject ?? '')}
                     </td>
                     <td className="px-s-4 py-[10px] text-ink-4 text-center">{l.week_of_term ?? '—'}</td>
-                    <td className="px-s-4 py-[10px]">{statusChip(l.status)}</td>
+                    <td className="px-s-4 py-[10px]">{statusChip(String(l.status ?? ''))}</td>
                     <td className="px-s-4 py-[10px] font-mono text-ink-4 text-[11px] whitespace-nowrap">
-                      {l.curriculum_code}
+                      {String(l.curriculum_code ?? '')}
                     </td>
                     <td className="px-s-4 py-[10px] text-right">
                       {l.status === 'archived' ? (

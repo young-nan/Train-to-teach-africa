@@ -31,9 +31,6 @@ export async function listLessonsForStudent({ studentId, level, subject, weekOfT
 }
 
 /**
- * Fetch a single lesson. Validates against LessonSchema before returning.
- */
-/**
  * Lightweight pupil summary for the parent-side personalisation banner.
  * RLS on `pupils` restricts a parent to their linked children, so this
  * call returns null if the parent isn't linked.
@@ -52,6 +49,9 @@ export async function getChildSummary(pupilId) {
   return data;
 }
 
+/**
+ * Fetch a single lesson. Validates against LessonSchema before returning.
+ */
 export async function getLesson(lessonId) {
   const { data, error } = await supabase
     .from('lessons')
@@ -134,7 +134,7 @@ export async function importLesson(lessonData) {
 
   const row = {
     curriculum_code:   parsed.curriculumCode,
-    level:             parsed.level,
+    level:              parsed.level,
     subject:           parsed.subject,
     topic:             parsed.topic,
     title:             parsed.title,
@@ -242,12 +242,6 @@ export async function listAllLessonsAdmin({ level, subject, status, search, page
   if (error) throw new Error(`Could not load lessons: ${error.message}`);
 
   const rows  = data ?? [];
-  const total = rows.length > 0 ? Number(rows[0].total_count ?? 0) : 0;
-
-  // Strip total_count from each row — it's a window function artefact
-  const lessons = rows.map(({ total_count, ...rest }) => rest);
-  return { lessons, total };
-}
   const total = rows.length > 0 ? Number(rows[0].total_count ?? 0) : 0;
 
   // Strip total_count from each row — it's a window function artefact

@@ -36,7 +36,7 @@ const ActivitySchema = z.object({
 export const LessonSchema = z.object({
   id: z.string().uuid(),
   curriculumCode: z.string().min(1), // e.g. "NERDC.PRI3.MATHS.NUM.05"
-  level: z.enum(['nursery_1', 'nursery_2', 'primary_1', 'primary_2', 'primary_3', 'primary_4', 'primary_5', 'primary_6']),
+  level: z.enum(['nursery_1', 'nursery_2', 'nursery_3', 'primary_1', 'primary_2', 'primary_3', 'primary_4', 'primary_5', 'primary_6']),
   subject: z.string().min(1),
   topic: z.string().min(1),
   title: z.string().min(1),

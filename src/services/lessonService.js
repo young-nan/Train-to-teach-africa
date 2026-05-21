@@ -206,9 +206,48 @@ export async function listAllLessonsAdmin({ level, subject, status, search, page
     p_size:    pageSize,
   });
 
+  // PGRST202 = function not found (DB migration not yet applied).
+  // Fall back to a direct table query with manual string coercion so the
+  // UI stays functional and never renders an embedded object (React #31).
+  const isMissingFn = error && (
+    error.code === 'PGRST202' ||
+    /Could not find the function/i.test(error.message ?? '')
+  );
+
+  if (isMissingFn) {
+    console.warn('[lessonService] list_lessons_admin RPC missing — run hotfix SQL in Supabase. Falling back to table query.');
+    let q = supabase
+      .from('lessons')
+      .select('id,curriculum_code,level,subject,topic,title,week_of_term,sort_index,status,estimated_minutes,version,created_at,updated_at', { count: 'exact' });
+    if (level)   q = q.eq('level', level);
+    if (subject) q = q.eq('subject', subject);
+    if (status)  q = q.eq('status', status);
+    if (search)  q = q.or(`title.ilike.%${search}%,topic.ilike.%${search}%`);
+    q = q.order('level').order('sort_index').range(page * pageSize, (page + 1) * pageSize - 1);
+    const { data: raw, error: rawErr, count } = await q;
+    if (rawErr) throw new Error(`Could not load lessons: ${rawErr.message}`);
+    // Coerce every field to string so PostgREST embedded objects never reach JSX
+    const lessons = (raw ?? []).map((r) => ({
+      ...r,
+      level:   String(r.level   ?? ''),
+      subject: String(r.subject ?? ''),
+      status:  String(r.status  ?? ''),
+      topic:   String(r.topic   ?? ''),
+      title:   String(r.title   ?? ''),
+      curriculum_code: String(r.curriculum_code ?? ''),
+    }));
+    return { lessons, total: count ?? 0 };
+  }
+
   if (error) throw new Error(`Could not load lessons: ${error.message}`);
 
   const rows  = data ?? [];
+  const total = rows.length > 0 ? Number(rows[0].total_count ?? 0) : 0;
+
+  // Strip total_count from each row — it's a window function artefact
+  const lessons = rows.map(({ total_count, ...rest }) => rest);
+  return { lessons, total };
+}
   const total = rows.length > 0 ? Number(rows[0].total_count ?? 0) : 0;
 
   // Strip total_count from each row — it's a window function artefact

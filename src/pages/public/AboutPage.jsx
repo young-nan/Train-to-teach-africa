@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 
 export default function AboutPage() {
-  usePageMeta('About TTA', 'Train To Teach Africa — building ethical educational infrastructure for African schools.');
+  usePageMeta('About TTA', 'Train To Teach Africa is building ethical educational infrastructure for African schools.');
   return (
     <div className="min-h-dvh bg-surface-1 text-ink-1">
       <PublicNav />
@@ -52,12 +52,12 @@ export default function AboutPage() {
               <Principle
                 n="01"
                 title="Africa-first, not Africa-also."
-                body="The platform is engineered around the realities of African classrooms. Foreign-built systems that arrive translated don't survive the first connectivity drop."
+                body="The platform is engineered around the realities of African classrooms."
               />
               <Principle
                 n="02"
                 title="Honest pricing."
-                body="African families pay in Naira. We don't move our prices when the FX market sneezes. The number on the screen is the number that comes off your bank statement."
+                body="African families pay in their currency. We don't move our prices when the FX market sneezes. The number on the screen is the number that comes off your bank statement."
               />
               <Principle
                 n="03"
@@ -77,17 +77,16 @@ export default function AboutPage() {
         <section className="border-b border-line-1 py-s-10 bg-surface-2/40">
           <div className="max-w-[1280px] mx-auto px-s-6 lg:px-s-9">
             <h2 className="font-display text-display-2 text-ink-0 mb-s-7">
-              Built in Lagos. <span className="ital-gold">For Africa.</span>
+              Built in Africa. <span className="ital-gold">For Africa.</span>
             </h2>
             <div className="grid lg:grid-cols-2 gap-s-7">
               <p className="text-body-l text-ink-2">
-                We are educators and engineers who believe African schools
+                We are educators who believe African schools
                 deserve infrastructure built for African realities — unstable
-                networks, low-end Android, NERDC-aligned curriculum, and
-                households that pay in Naira.
+                networks, low-end Android, Africa-aligned curriculum.
               </p>
               <p className="text-body-l text-ink-2">
-                Our team works directly with Nigerian schools, parents, and
+                Our team works directly with African schools, parents, and
                 teachers to make sure what we ship matches what classrooms
                 actually need. Every feature exists because someone on the
                 ground asked for it.
@@ -102,7 +101,7 @@ export default function AboutPage() {
             <h2 className="font-display text-display-2 text-ink-0">Want to talk?</h2>
             <p className="mt-s-4 text-body-l text-ink-2 max-w-[58ch] mx-auto">
               Whether you run a school, want to partner, are looking to write
-              about us, or simply want to learn more — we'd be glad to hear
+              about us, or simply want to learn more; we'd be glad to hear
               from you.
             </p>
             <div className="mt-s-7 flex flex-wrap justify-center gap-s-4">

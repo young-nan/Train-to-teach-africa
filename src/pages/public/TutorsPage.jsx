@@ -39,7 +39,7 @@ const CURRICULUM_OPTIONS = [
 ];
 
 export default function TutorsPage() {
-  usePageMeta('Find a Tutor', 'Connect with verified tutors for online and in-person sessions across Nigeria.');
+  usePageMeta('Find a Tutor', 'Connect with verified tutors for online and in-person sessions across Africa.');
   return (
     <div className="min-h-dvh bg-surface-1 text-ink-1">
       <PublicNav />

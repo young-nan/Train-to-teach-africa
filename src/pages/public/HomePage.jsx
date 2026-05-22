@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { useImpactMetrics } from '@/hooks/useImpactMetrics';
 
-export default function HomePage() {  usePageMeta('Train To Teach Africa', 'The operating system for African education. Curriculum-aligned digital learning and school management for Nigerian schools and families.');
+export default function HomePage() {  usePageMeta('Train To Teach Africa', 'The operating system for African education. Curriculum-aligned digital learning and school management for African schools and families.');
 
   return (
     <div className="min-h-dvh bg-surface-1 text-ink-1">
@@ -81,7 +81,7 @@ function Hero() {
               Train To Teach Africa helps schools manage operations, helps teachers
               teach better, helps parents support learning at home, and helps
               students access structured, high-quality education designed around
-              African realities. Built by Nigerian educators for African classrooms.
+              African realities. Built by African educators for African classrooms.
             </p>
             <div className="mt-s-8 flex flex-wrap gap-s-4">
               <Link to="/sign-up">
@@ -199,7 +199,7 @@ const PRODUCTS = [
     eyebrow: 'TTA Learn',
     title: 'Curriculum-aligned digital learning.',
     body:
-      'Interactive lessons aligned with the NERDC and NAPPS curriculum. ' +
+      'Interactive lessons aligned with African curriculum. ' +
       'Students access engaging literacy, numeracy, science, and foundational ' +
       'learning experiences. Teachers receive instructional guidance and ' +
       'structured teaching support. Parents receive simplified lesson guidance, ' +
@@ -374,7 +374,7 @@ function OfflineFirst() {
           <div className="grid gap-s-4">
             <Reality eyebrow="Connectivity" title="Network blinks ≠ lost data." body="Every register, score, and payment saves locally first, syncs in the background." />
             <Reality eyebrow="Devices"      title="Tecno Spark on throttled 3G." body="First contentful paint ≤ 1.8s. Initial JS payload ≤ 180 KB. Tested on real hardware." />
-            <Reality eyebrow="Curriculum"   title="NERDC + NAPPS aligned."        body="Built by Nigerian educators, for the curriculum your school actually teaches." />
+            <Reality eyebrow="Curriculum"   title="African aligned."        body="Built by African educators, for the curriculum your school actually teaches." />
           </div>
         </div>
       </div>

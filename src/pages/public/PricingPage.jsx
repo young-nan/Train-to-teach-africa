@@ -329,7 +329,7 @@ function PriceCard({ tier, audienceMeta, cadenceFallback, track, onSubscribe }) 
 
         {cadenceFallback && (
           <div className="mt-s-2 font-mono text-[10px] text-ink-3 italic">
-            Annual plan not available for this audience — showing term pricing.
+            Annual plan not available for this audience. Showing term pricing.
           </div>
         )}
 
@@ -448,11 +448,11 @@ function FaqSection() {
   const faqs = [
     {
       q: 'Are NGN prices fixed?',
-      a: 'Yes. African curriculum prices are denominated in Naira and stay fixed regardless of FX movement. The USD equivalent shown next to the NGN price is informational only.',
+      a: 'Yes. African curriculum prices are denominated in local currency and stay fixed regardless of FX movement. The USD equivalent shown next to the NGN price is informational only.',
     },
     {
       q: 'Can I switch between term and annual billing?',
-      a: "Yes — at any renewal point. We pro-rate intelligently so you never pay twice for the same period.",
+      a: "Yes. at any renewal point. We pro-rate intelligently so you never pay twice for the same period.",
     },
     {
       q: 'Do you support transfer or USSD?',
@@ -460,7 +460,7 @@ function FaqSection() {
     },
     {
       q: 'What happens if my school grows past 200 pupils?',
-      a: "Talk to sales — we'll quote a custom enterprise tier. The platform is designed for school groups; we've worked with 6-school operators.",
+      a: "Talk to sales. We'll quote a custom enterprise tier. The platform is designed for school groups; we've worked with 6-school operators.",
     },
   ];
 

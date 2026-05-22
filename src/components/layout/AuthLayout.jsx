@@ -26,12 +26,10 @@ export function AuthLayout({ title, subtitle, footer, children }) {
             The operating system for <span className="ital-gold">African education.</span>
           </p>
           <p className="mt-s-5 text-body text-ink-2 max-w-[42ch]">
-            Built specifically for African classrooms — offline-first,
-            mobile-first, curriculum-aligned.
+            Built specifically for African classrooms.
           </p>
         </div>
         <div className="relative font-mono text-meta text-ink-3 tracking-[0.04em]">
-          Lagos · Nigeria
         </div>
       </aside>
 

@@ -61,7 +61,6 @@ export function PublicFooter() {
             families, and educators.
           </p>
           <div className="mt-s-5 font-mono text-meta tracking-[0.18em] uppercase text-ink-3">
-            Lagos · Nigeria
           </div>
         </div>
 
@@ -85,7 +84,7 @@ export function PublicFooter() {
         <div>
           <div className="font-mono text-eyebrow uppercase text-gold-400 mb-s-4">Contact</div>
           <ul className="flex flex-col gap-s-3 text-[13.5px]">
-            <li className="text-ink-2">Lagos, Nigeria</li>
+            <li className="text-ink-2">West Africa</li>
             <li>
               <a
                 href="mailto:support@traintoteachafrica.org"

@@ -34,7 +34,7 @@ export default function SolutionsParentsPage() {
             </h1>
             <p className="mt-s-7 text-body-l text-ink-2 max-w-[64ch]">
               Many parents want to support their children academically but do
-              not always know how. Train To Teach Africa helps bridge that gap —
+              not always know how. Train To Teach Africa helps bridge that gap,
               with simple lesson summaries, a 5-minute home activity each
               evening, and clear visibility into your child's learning.
             </p>
@@ -70,7 +70,7 @@ export default function SolutionsParentsPage() {
           <div className="max-w-[1280px] mx-auto px-s-6 lg:px-s-9">
             <h2 className="font-display text-display-2 text-ink-0 mb-s-7">How it works.</h2>
             <div className="grid md:grid-cols-3 gap-s-5">
-              <Step n="01" title="Tell us your child's class." body="We align everything to the NERDC curriculum your child is actually learning." />
+              <Step n="01" title="Tell us your child's class." body="We align everything to the African curriculum your child is actually learning." />
               <Step n="02" title="Get tonight's activity."     body="A 5-minute thing you can do during dinner prep. No printer needed. No special supplies." />
               <Step n="03" title="See progress."                body="One screen, three numbers, no jargon. We'll tell you when something needs attention." />
             </div>

@@ -21,7 +21,7 @@ const POLICY_VERSION = '1.0';
 const CONTACT_EMAIL  = 'privacy@traintoteachafrica.org';
 
 export default function PrivacyPage() {
-  usePageMeta('Privacy Policy', 'How Train To Teach Africa collects, uses, and protects your data. NDPA-aligned.');
+  usePageMeta('Privacy Policy', 'How Train To Teach Africa collects, uses, and protects your data.');
   return (
     <div className="min-h-dvh bg-surface-1 text-ink-1">
       <PublicNav />
@@ -142,7 +142,7 @@ export default function PrivacyPage() {
             <h3 className="font-display text-display-3 text-ink-0 mt-s-4 mb-s-3">What we process</h3>
             <DataTable rows={[
               ['Child learning data',      'Lesson engagement, assessment progress, report cards'],
-              ['Home learning activity',   'Lesson views, dinner question responses — when opted in to WhatsApp digest'],
+              ['Home learning activity',   'Lesson views, dinner question responses, when opted in to WhatsApp digest'],
               ['Account information',      'Name, email, phone number (for WhatsApp delivery)'],
               ['Connection to school',     'Linked children, school data access scope'],
             ]} />
@@ -150,7 +150,7 @@ export default function PrivacyPage() {
             <ConsentList items={[
               ['Child progress tracking', 'Required — needed for lessons, assessments, report cards'],
               ['Anonymised research', 'Optional — contribute to educational research without identifying your child'],
-              ['Home learning research', 'Optional — your engagement with dinner questions and kitchen activities contributes anonymously to research on Nigerian home learning'],
+              ['Home learning research', 'Optional — your engagement with dinner questions and kitchen activities contributes anonymously to research on African home learning'],
             ]} />
             <p className="mt-s-4 text-[13px] text-ink-3">
               Manage your privacy choices in <strong>Account Settings → Privacy</strong>.
@@ -217,7 +217,7 @@ export default function PrivacyPage() {
 
           {/* Your rights */}
           <Section id="your-rights" title="Your rights">
-            <p>Under the Nigeria Data Protection Act (NDPA) and aligned with GDPR principles, you have the right to:</p>
+            <p>Under the Data Protection Act (DPA) and aligned with GDPR principles, you have the right to:</p>
             <div className="space-y-s-3 mt-s-4">
               {[
                 ['Access',      'Request a copy of all personal data we hold about you.'],

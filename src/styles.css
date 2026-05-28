@@ -19,42 +19,42 @@
 
 :root {
   /* Surfaces */
-  --c-surface-0: #0a0c16;
-  --c-surface-1: #0d0f1a;
-  --c-surface-2: #13162a;
-  --c-surface-3: #1a1d30;
-  --c-surface-4: #22263c;
-  --c-surface-5: #2c3149;
+  --c-surface-0: #0f1729;
+  --c-surface-1: #131c2e;
+  --c-surface-2: #1a2536;
+  --c-surface-3: #212d3f;
+  --c-surface-4: #2a3a4f;
+  --c-surface-5: #344659;
 
   /* Ink */
   --c-ink-0: #ffffff;
-  --c-ink-1: #eef0f7;
-  --c-ink-2: #b6bbcf;
-  --c-ink-3: #7a8099;
-  --c-ink-4: #4f5469;
+  --c-ink-1: #f0f4f8;
+  --c-ink-2: #cbd5e1;
+  --c-ink-3: #8b95a7;
+  --c-ink-4: #5a6577;
 
   /* Gold */
-  --c-gold-50:  #fbf3dd;
-  --c-gold-200: #f1d182;
-  --c-gold-400: #e5a62a;
-  --c-gold-500: #c98c1c;
-  --c-gold-600: #a8720f;
+  --c-gold-50:  #fef3e2;
+  --c-gold-200: #fdba74;
+  --c-gold-400: #f97316;
+  --c-gold-500: #ea580c;
+  --c-gold-600: #c2410c;
 
   /* Semantic */
-  --c-teal-400:    #22b8a6;   /* SIMS accent */
-  --c-emerald-200: #6ee7b7;   /* Tutor marketplace light */
-  --c-emerald-400: #10b981;   /* Tutor marketplace */
-  --c-rose-200:    #fda4af;   /* Parent platform light */
-  --c-rose-400:    #fb7185;   /* Parent platform */
-  --c-coral-400:   #f97066;   /* Student dashboard */
-  --c-red-400:     #ef5350;
-  --c-green-400:   #3fb950;
-  --c-amber-400:   #f5a524;
+  --c-teal-400:    #0d9488;   /* SIMS accent */
+  --c-emerald-200: #a7f3d0;   /* Tutor marketplace light */
+  --c-emerald-400: #059669;   /* Tutor marketplace */
+  --c-rose-200:    #fbcfe8;   /* Parent platform light */
+  --c-rose-400:    #ec4899;   /* Parent platform */
+  --c-coral-400:   #f43f5e;   /* Student dashboard */
+  --c-red-400:     #dc2626;
+  --c-green-400:   #16a34a;
+  --c-amber-400:   #d97706;
 
   /* Strokes */
-  --c-line-1: rgba(255,255,255,0.06);
-  --c-line-2: rgba(255,255,255,0.10);
-  --c-line-3: rgba(255,255,255,0.16);
+  --c-line-1: rgba(255,255,255,0.05);
+  --c-line-2: rgba(255,255,255,0.08);
+  --c-line-3: rgba(255,255,255,0.12);
 
   /* Fonts */
   --f-display: "Crimson Text", Georgia, serif;
@@ -75,7 +75,7 @@
      Components can read var(--product-accent) without knowing which surface
      they're on — the provider handles the switch.                           */
   --product-accent: var(--c-gold-400);
-  --product-glow:   rgba(229,166,42,0.10);
+  --product-glow:   rgba(249,115,22,0.08);
 }
 
 /* ── 2. Base layer ────────────────────────────────────────────────────────── */

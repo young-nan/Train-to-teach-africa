@@ -9,40 +9,40 @@ export default {
       // Existing components keep working with no changes required.
       colors: {
         surface: {
-          0: '#0a0c16',
-          1: '#0d0f1a',
-          2: '#13162a',
-          3: '#1a1d30',
-          4: '#22263c',
-          5: '#2c3149',
+          0: '#0f1729',
+          1: '#131c2e',
+          2: '#1a2536',
+          3: '#212d3f',
+          4: '#2a3a4f',
+          5: '#344659',
         },
         ink: {
           0: '#ffffff',
-          1: '#eef0f7',
-          2: '#b6bbcf',
-          3: '#7a8099',
-          4: '#4f5469',
+          1: '#f0f4f8',
+          2: '#cbd5e1',
+          3: '#8b95a7',
+          4: '#5a6577',
         },
         gold: {
-          50:  '#fbf3dd',
-          200: '#f1d182',
-          400: '#e5a62a',
-          500: '#c98c1c',
-          600: '#a8720f',
+          50:  '#fef3e2',
+          200: '#fdba74',
+          400: '#f97316',
+          500: '#ea580c',
+          600: '#c2410c',
         },
-        teal:    { 400: '#22b8a6' },
-        amber:   { 400: '#f5a524' },
-        red:     { 400: '#ef5350' },
-        green:   { 400: '#3fb950' },
+        teal:    { 400: '#0d9488' },
+        amber:   { 400: '#d97706' },
+        red:     { 400: '#dc2626' },
+        green:   { 400: '#16a34a' },
         // ── v2 product-accent scales ─────────────────────────────────────
-        rose:    { 200: '#fda4af', 400: '#fb7185' },  // Parent platform
-        coral:   { 400: '#f97066' },                   // Student dashboard
-        emerald: { 200: '#6ee7b7', 400: '#10b981' },  // Tutor marketplace
+        rose:    { 200: '#fbcfe8', 400: '#ec4899' },  // Parent platform
+        coral:   { 400: '#f43f5e' },                   // Student dashboard
+        emerald: { 200: '#a7f3d0', 400: '#059669' },  // Tutor marketplace
         // ─────────────────────────────────────────────────────────────────
         line: {
-          1: 'rgba(255,255,255,0.06)',
-          2: 'rgba(255,255,255,0.10)',
-          3: 'rgba(255,255,255,0.16)',
+          1: 'rgba(255,255,255,0.05)',
+          2: 'rgba(255,255,255,0.08)',
+          3: 'rgba(255,255,255,0.12)',
         },
       },
       fontFamily: {

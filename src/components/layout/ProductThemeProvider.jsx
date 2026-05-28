@@ -49,12 +49,12 @@
 
 /** @type {Record<string, { accent: string; glow: string }>} */
 const ACCENTS = {
-  public:  { accent: 'var(--c-gold-400)',    glow: 'rgba(229,166,42,0.10)'   },
-  sims:    { accent: 'var(--c-teal-400)',    glow: 'rgba(34,184,166,0.06)'   },
-  parent:  { accent: 'var(--c-rose-400)',    glow: 'rgba(251,113,133,0.08)'  },
-  student: { accent: 'var(--c-coral-400)',   glow: 'rgba(249,112,102,0.08)'  },
-  tutor:   { accent: 'var(--c-emerald-400)', glow: 'rgba(16,185,129,0.10)'   },
-  admin:   { accent: 'var(--c-gold-400)',    glow: 'rgba(229,166,42,0.08)'   },
+  public:  { accent: 'var(--c-gold-400)',    glow: 'rgba(249,115,22,0.10)'   },
+  sims:    { accent: 'var(--c-teal-400)',    glow: 'rgba(13,148,136,0.06)'   },
+  parent:  { accent: 'var(--c-rose-400)',    glow: 'rgba(236,72,153,0.08)'   },
+  student: { accent: 'var(--c-coral-400)',   glow: 'rgba(244,63,94,0.08)'    },
+  tutor:   { accent: 'var(--c-emerald-400)', glow: 'rgba(5,150,105,0.10)'    },
+  admin:   { accent: 'var(--c-gold-400)',    glow: 'rgba(249,115,22,0.08)'   },
 };
 
 /**

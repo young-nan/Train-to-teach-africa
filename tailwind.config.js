@@ -83,7 +83,7 @@ export default {
       boxShadow: {
         soft: '0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6)',
         lift: '0 4px 12px rgba(0,0,0,.45), 0 24px 48px -16px rgba(0,0,0,.7)',
-        gold: '0 0 0 1px rgba(229,166,42,.25), 0 12px 32px -8px rgba(229,166,42,.18)',
+        gold: '0 0 0 1px rgba(249,115,22,.25), 0 12px 32px -8px rgba(249,115,22,.18)',
       },
       transitionTimingFunction: {
         'out-soft': 'cubic-bezier(0.22, 1, 0.36, 1)',

@@ -19,36 +19,36 @@
 
 :root {
   /* Surfaces */
-  --c-surface-0: #0f1729;
-  --c-surface-1: #131c2e;
-  --c-surface-2: #1a2536;
-  --c-surface-3: #212d3f;
-  --c-surface-4: #2a3a4f;
-  --c-surface-5: #344659;
+  --c-surface-0: #0f111e;
+  --c-surface-1: #131628;
+  --c-surface-2: #1a1f35;
+  --c-surface-3: #212842;
+  --c-surface-4: #2a3454;
+  --c-surface-5: #34405e;
 
   /* Ink */
   --c-ink-0: #ffffff;
-  --c-ink-1: #f0f4f8;
+  --c-ink-1: #f0f3f9;
   --c-ink-2: #cbd5e1;
   --c-ink-3: #8b95a7;
   --c-ink-4: #5a6577;
 
-  /* Gold */
-  --c-gold-50:  #fef3e2;
-  --c-gold-200: #fdba74;
-  --c-gold-400: #f97316;
-  --c-gold-500: #ea580c;
-  --c-gold-600: #c2410c;
+  /* Blue */
+  --c-blue-50:  #eff6ff;
+  --c-blue-200: #93c5fd;
+  --c-blue-400: #6366F1;
+  --c-blue-500: #4f46e5;
+  --c-blue-600: #4338ca;
 
   /* Semantic */
-  --c-teal-400:    #0d9488;   /* SIMS accent */
-  --c-emerald-200: #a7f3d0;   /* Tutor marketplace light */
-  --c-emerald-400: #059669;   /* Tutor marketplace */
+  --c-teal-400:    #14b8a6;   /* SIMS accent */
+  --c-emerald-200: #d1fae5;   /* Tutor marketplace light */
+  --c-emerald-400: #10b981;   /* Tutor marketplace */
   --c-rose-200:    #fbcfe8;   /* Parent platform light */
   --c-rose-400:    #ec4899;   /* Parent platform */
   --c-coral-400:   #f43f5e;   /* Student dashboard */
   --c-red-400:     #dc2626;
-  --c-green-400:   #16a34a;
+  --c-green-400:   #10b981;
   --c-amber-400:   #d97706;
 
   /* Strokes */
@@ -74,8 +74,8 @@
      via inline style (see ProductThemeProvider.jsx).
      Components can read var(--product-accent) without knowing which surface
      they're on — the provider handles the switch.                           */
-  --product-accent: var(--c-gold-400);
-  --product-glow:   rgba(249,115,22,0.08);
+  --product-accent: var(--c-blue-400);
+  --product-glow:   rgba(99,102,241,0.08);
 }
 
 /* ── 2. Base layer ────────────────────────────────────────────────────────── */
@@ -97,17 +97,17 @@
     }
   }
 
-  /* Default focus ring — 2px gold, 3px offset (WCAG 2.4.11) */
+  /* Default focus ring — 2px blue, 3px offset (WCAG 2.4.11) */
   :focus-visible {
-    outline: 2px solid theme('colors.gold.400');
+    outline: 2px solid theme('colors.blue.400');
     outline-offset: 3px;
     border-radius: 4px;
   }
 
-  /* Selection — gold tint on dark surfaces */
+  /* Selection — blue tint on dark surfaces */
   ::selection {
-    background-color: theme('colors.gold.400');
-    color: #1a1305;
+    background-color: theme('colors.blue.400');
+    color: #0f1323;
   }
 }
 
@@ -127,7 +127,7 @@
   ─────────────────────────────────────────────────────────────────────── */
   .ital-gold {
     font-style: italic;
-    color: theme('colors.gold.200');
+    color: theme('colors.blue.200');
     font-weight: 400;
   }
 

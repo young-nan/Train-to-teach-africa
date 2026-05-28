@@ -9,35 +9,35 @@ export default {
       // Existing components keep working with no changes required.
       colors: {
         surface: {
-          0: '#0f1729',
-          1: '#131c2e',
-          2: '#1a2536',
-          3: '#212d3f',
-          4: '#2a3a4f',
-          5: '#344659',
+          0: '#0f111e',
+          1: '#131628',
+          2: '#1a1f35',
+          3: '#212842',
+          4: '#2a3454',
+          5: '#34405e',
         },
         ink: {
           0: '#ffffff',
-          1: '#f0f4f8',
+          1: '#f0f3f9',
           2: '#cbd5e1',
           3: '#8b95a7',
           4: '#5a6577',
         },
-        gold: {
-          50:  '#fef3e2',
-          200: '#fdba74',
-          400: '#f97316',
-          500: '#ea580c',
-          600: '#c2410c',
+        blue: {
+          50:  '#eff6ff',
+          200: '#93c5fd',
+          400: '#6366F1',
+          500: '#4f46e5',
+          600: '#4338ca',
         },
-        teal:    { 400: '#0d9488' },
+        teal:    { 400: '#14b8a6' },
         amber:   { 400: '#d97706' },
         red:     { 400: '#dc2626' },
-        green:   { 400: '#16a34a' },
+        green:   { 400: '#10b981' },
         // ── v2 product-accent scales ─────────────────────────────────────
         rose:    { 200: '#fbcfe8', 400: '#ec4899' },  // Parent platform
         coral:   { 400: '#f43f5e' },                   // Student dashboard
-        emerald: { 200: '#a7f3d0', 400: '#059669' },  // Tutor marketplace
+        emerald: { 200: '#d1fae5', 400: '#10b981' },  // Tutor marketplace (brighter)
         // ─────────────────────────────────────────────────────────────────
         line: {
           1: 'rgba(255,255,255,0.05)',
@@ -83,7 +83,7 @@ export default {
       boxShadow: {
         soft: '0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6)',
         lift: '0 4px 12px rgba(0,0,0,.45), 0 24px 48px -16px rgba(0,0,0,.7)',
-        gold: '0 0 0 1px rgba(249,115,22,.25), 0 12px 32px -8px rgba(249,115,22,.18)',
+        gold: '0 0 0 1px rgba(99,102,241,.25), 0 12px 32px -8px rgba(99,102,241,.18)',
       },
       transitionTimingFunction: {
         'out-soft': 'cubic-bezier(0.22, 1, 0.36, 1)',

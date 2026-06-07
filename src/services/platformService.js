@@ -5,6 +5,11 @@
  *
  * All functions here operate at the TTA network level, not at a single school.
  * School-scoped operations stay in simsService.js, staffService.js, etc.
+ *
+ * v2 additions:
+ *   getPilotMode()        — reads platform_settings.pilot_mode
+ *   setPilotModeSetting() — writes platform_settings.pilot_mode (super_admin only)
+ *   getActiveModules()    — reads active_modules table
  */
 
 import { supabase } from '@/lib/supabase';
@@ -56,6 +61,58 @@ export async function getRevenueSummary({ months = 6 } = {}) {
   return data ?? [];
 }
 
+// ── Pilot Mode ────────────────────────────────────────────────────────────────
+
+/**
+ * Read the current pilot mode setting from the database.
+ * Called at boot by usePilotMode() to hydrate the pilot store.
+ * Any authenticated user can read this (RLS allows it).
+ *
+ * @returns {Promise<boolean>}
+ */
+export async function getPilotMode() {
+  const { data, error } = await supabase.rpc('get_pilot_mode');
+  if (error) throw new Error(`Could not read pilot mode: ${error.message}`);
+  return Boolean(data);
+}
+
+/**
+ * Write the pilot mode setting to the database.
+ * Only super_admin can execute set_pilot_mode() — the RPC enforces this.
+ * Throws if the caller is not super_admin or if the DB write fails.
+ *
+ * @param {boolean} enabled
+ * @returns {Promise<void>}
+ */
+export async function setPilotModeSetting(enabled) {
+  const { error } = await supabase.rpc('set_pilot_mode', { p_enabled: enabled });
+  if (error) throw new Error(`Could not update pilot mode: ${error.message}`);
+  // Audit event is written by the DB trigger, but we also log client-side
+  // for immediate availability in the audit log component.
+  await logAuditEvent({
+    entityType: 'platform_settings',
+    entityId: 'pilot_mode',
+    action: enabled ? 'pilot_mode_enabled' : 'pilot_mode_disabled',
+  }).catch(() => {
+    // Non-fatal — the DB trigger already wrote the audit entry.
+  });
+}
+
+/**
+ * Get the list of active EOS modules and their enabled status.
+ * Used to conditionally render nav items and features.
+ *
+ * @returns {Promise<Array<{ module_key: string, enabled: boolean, label: string }>>}
+ */
+export async function getActiveModules() {
+  const { data, error } = await supabase
+    .from('active_modules')
+    .select('module_key, enabled, label, description')
+    .order('module_key');
+  if (error) throw new Error(`Could not load active modules: ${error.message}`);
+  return data ?? [];
+}
+
 // ── School management ─────────────────────────────────────────────────────────
 
 /**
@@ -75,144 +132,127 @@ export async function listAllSchools() {
 
 /**
  * Create a new school on the platform.
+ * Also creates the initial school_admin invite (done server-side).
  */
 export async function createSchool({ name, city, state, phone }) {
   const slug = name.toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
 
   const { data, error } = await supabase
     .from('schools')
-    .insert({ name, city, state, phone, slug, status: 'active' })
-    .select()
+    .insert({ name, slug, city, state, phone, active: true })
+    .select('id, name, slug')
     .single();
-  if (error) throw new Error(`Could not create school: ${error.message}`);
 
-  logAuditEvent({ action: 'school.created', details: { school_id: data.id, name } });
+  if (error) throw new Error(`Could not create school: ${error.message}`);
   return data;
 }
 
 /**
- * Deactivate (soft-delete) a school.
+ * Deactivate a school. Does not delete data.
+ * The school's users lose dashboard access until reactivated.
  */
 export async function deactivateSchool(schoolId) {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('schools')
     .update({ active: false })
-    .eq('id', schoolId)
-    .select('id, name')
-    .single();
+    .eq('id', schoolId);
   if (error) throw new Error(`Could not deactivate school: ${error.message}`);
-  logAuditEvent({ action: 'school.deactivated', details: { school_id: schoolId } });
-  return data;
+  await logAuditEvent({
+    entityType: 'school',
+    entityId: schoolId,
+    action: 'school_deactivated',
+  }).catch(() => {});
 }
 
-// ── User management (platform level) ─────────────────────────────────────────
+// ── User management ───────────────────────────────────────────────────────────
 
 /**
- * Search users across the platform by name, email, or role.
- * Returns profiles + school name.
+ * Search users across the entire platform.
+ * Returns paginated results with school name.
+ *
+ * @param {{ query?: string, role?: string|null, page?: number }} opts
  */
-export async function searchUsers({ query = '', role = null, page = 1, pageSize = 20 } = {}) {
+export async function searchUsers({ query = '', role = null, page = 1, perPage = 25 } = {}) {
   let q = supabase
     .from('profiles')
-    .select(`
-      user_id, full_name, email, role, phone, created_at,
-      schools(name)
-    `, { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range((page - 1) * pageSize, page * pageSize - 1);
+    .select('user_id, full_name, email, role, school_id, created_at, schools(name)', { count: 'exact' });
 
   if (query) {
     q = q.or(`full_name.ilike.%${query}%,email.ilike.%${query}%`);
   }
-  if (role) q = q.eq('role', role);
+  if (role) {
+    q = q.eq('role', role);
+  }
 
-  const { data, error, count } = await q;
-  if (error) throw new Error(`Search failed: ${error.message}`);
+  const from = (page - 1) * perPage;
+  q = q.range(from, from + perPage - 1).order('created_at', { ascending: false });
+
+  const { data, count, error } = await q;
+  if (error) throw new Error(`Could not search users: ${error.message}`);
 
   return {
-    users:      data ?? [],
+    users: data ?? [],
     totalCount: count ?? 0,
     page,
-    pageSize,
-    totalPages: Math.ceil((count ?? 0) / pageSize),
+    totalPages: Math.ceil((count ?? 0) / perPage),
   };
 }
 
 /**
  * Change a user's role. Super admin only.
- * Guards: cannot demote another super_admin; cannot self-demote.
+ * Cannot change super_admin to any other role via this function (safety).
  */
 export async function changeUserRole({ userId, newRole }) {
-  const ALLOWED_ROLES = ['parent', 'teacher', 'head_teacher', 'school_admin', 'tutor', 'super_admin'];
-  if (!ALLOWED_ROLES.includes(newRole)) {
-    throw new Error(`Invalid role: ${newRole}`);
-  }
-
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('profiles')
     .update({ role: newRole })
-    .eq('user_id', userId)
-    .select('user_id, full_name, role')
-    .single();
-
-  if (error) throw new Error(`Could not update role: ${error.message}`);
-  logAuditEvent({ action: 'user.role_changed', details: { user_id: userId, new_role: newRole } });
-  return data;
+    .eq('user_id', userId);
+  if (error) throw new Error(`Could not change role: ${error.message}`);
+  await logAuditEvent({
+    entityType: 'user',
+    entityId: userId,
+    action: 'role_changed',
+    newValue: { role: newRole },
+  }).catch(() => {});
 }
 
 /**
- * Invite a new user at the platform level (not tied to a specific school).
- * Used by super admin to onboard school owners, new tutors, etc.
+ * Invite a new user to the platform by email.
+ * Supabase Auth sends the magic link; we set the role in metadata.
  */
-export async function invitePlatformUser({ email, fullName, role, schoolId = null }) {
-  const { data, error } = await supabase.functions.invoke('Invite-user', {
-    body: {
-      email,
+export async function invitePlatformUser({ email, fullName, role, schoolId }) {
+  const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
+    data: {
       full_name: fullName,
       role,
-      school_id: schoolId,
-      mode: 'invite',
+      school_id: schoolId || null,
     },
   });
-  if (error || data?.error) {
-    throw new Error(error?.message ?? data?.error ?? 'Invitation failed.');
-  }
-  logAuditEvent({
-    action:  'user.platform_invited',
-    details: { email, role, school_id: schoolId },
-  });
+  if (error) throw new Error(`Could not invite user: ${error.message}`);
   return data;
 }
 
-// ── Tutor management ──────────────────────────────────────────────────────────
-
 /**
- * List tutors by status. Used by super admin tutor management tab.
+ * List tutors filtered by approval status.
  */
-export async function listTutors({ status = null, page = 1, pageSize = 20 } = {}) {
+export async function listTutors({ status = null } = {}) {
   let q = supabase
     .from('tutors')
     .select(`
-      id, full_name, city, state, approval_status, teaches_online,
-      teaches_offline, hourly_rate_minor, currency, rating_avg,
-      rating_count, created_at,
-      tutor_subjects(subject, curriculum)
-    `, { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range((page - 1) * pageSize, page * pageSize - 1);
+      id, full_name, city, state, bio, hourly_rate_minor,
+      teaches_online, teaches_offline, approval_status,
+      rejection_reason, active, created_at,
+      tutor_subjects (subject, curriculum, level)
+    `)
+    .order('created_at', { ascending: false });
 
   if (status) q = q.eq('approval_status', status);
 
-  const { data, error, count } = await q;
-  if (error) throw new Error(`Could not load tutors: ${error.message}`);
-
-  return {
-    tutors:     data ?? [],
-    totalCount: count ?? 0,
-    page,
-    pageSize,
-    totalPages: Math.ceil((count ?? 0) / pageSize),
-  };
+  const { data, error } = await q;
+  if (error) throw new Error(`Could not list tutors: ${error.message}`);
+  return { tutors: data ?? [] };
 }

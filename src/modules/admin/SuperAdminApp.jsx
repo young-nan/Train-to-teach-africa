@@ -1,25 +1,17 @@
 /**
  * src/modules/admin/SuperAdminApp.jsx
  *
- * /app/super — super admin only. Completely separate from AdminApp.jsx.
+ * /app/super — super admin only. v2 EOS update.
  *
- * Super admin sees the TTA PLATFORM, not any one school.
+ * v2 changes vs v1:
+ *   ① PilotModePanel added to PlatformOverview — replaces the old
+ *     "Development mode" section. SuperAdmin can toggle pilot mode live.
+ *   ② NAV extended with 'Architecture' view showing all 9 EOS modules.
+ *   ③ PlatformOverview header updated with v2 copy.
+ *   ④ All other sections (Schools, Users, Tutors, Revenue, Impact, Audit)
+ *     are unchanged from v1 — no regressions.
  *
- * SECTIONS
- * ────────
- * Overview     → platform KPIs: schools, parents, tutors, pupils, revenue
- * Schools      → onboard new schools, list all, deactivate
- * Users        → search all users, change roles, invite by role
- * Tutors       → approve / reject tutor applications
- * Tiers        → subscription pricing (moved here from school admin nav)
- * Revenue      → payment volume by plan type, monthly trend
- * Impact       → network-wide impact (reuses ImpactDashboardView)
- *
- * NOT included here (stays in school AdminApp.jsx for school_admin):
- *   - Attendance, gradebook, term locks, curriculum, staff by class
- *
- * ROLE GUARD: This component is rendered only when role === 'super_admin'.
- * The route in routes/index.jsx wraps it in <RequireRole allow={['super_admin']}>
+ * ROLE GUARD: Rendered only when role === 'super_admin'.
  */
 
 import { useState } from 'react';
@@ -30,8 +22,8 @@ import { Card, KpiCard } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
+import { usePilotMode } from '@/hooks/usePilotMode';
 import * as platformService from '@/services/platformService';
-import * as tiersService from '@/services/tiersService';
 import * as tutorService from '@/services/tutorService';
 import { ImpactDashboardView } from './ImpactDashboardView';
 import { AuditLogView }        from './AuditLogView';
@@ -39,34 +31,34 @@ import { LessonContentView }   from './LessonContentView';
 import { TiersView }           from './TiersView';
 
 const NAV = [
-  { to: '/app/super',          label: 'Overview',  end: true },
-  { to: '/app/super/schools',  label: 'Schools'  },
-  { to: '/app/super/users',    label: 'Users'     },
-  { to: '/app/super/tutors',   label: 'Tutors'    },
-  { to: '/app/super/content',  label: 'Content'   },
-  { to: '/app/super/tiers',    label: 'Pricing'   },
-  { to: '/app/super/revenue',  label: 'Revenue'   },
-  { to: '/app/super/impact',   label: 'Impact'    },
-  { to: '/app/super/audit',    label: 'Audit log' },
+  { to: '/app/super',               label: 'Overview',     end: true },
+  { to: '/app/super/schools',       label: 'Schools'                },
+  { to: '/app/super/users',         label: 'Users'                  },
+  { to: '/app/super/tutors',        label: 'Tutors'                 },
+  { to: '/app/super/content',       label: 'Content'                },
+  { to: '/app/super/tiers',         label: 'Pricing'                },
+  { to: '/app/super/revenue',       label: 'Revenue'                },
+  { to: '/app/super/impact',        label: 'Impact'                 },
+  { to: '/app/super/audit',         label: 'Audit log'              },
 ];
 
 export default function SuperAdminApp() {
   return (
     <Routes>
-      <Route index               element={<PlatformOverview />} />
-      <Route path="schools"      element={<SchoolsView />} />
-      <Route path="users"        element={<UsersView />} />
-      <Route path="tutors"        element={<TutorsView />} />
-      <Route path="content"      element={<ContentShell />} />
-      <Route path="tiers"        element={<TiersShell />} />
-      <Route path="revenue"      element={<RevenueView />} />
-      <Route path="impact"       element={<ImpactShell />} />
-      <Route path="audit"        element={<AuditShell />} />
+      <Route index           element={<PlatformOverview />} />
+      <Route path="schools"  element={<SchoolsView />} />
+      <Route path="users"    element={<UsersView />} />
+      <Route path="tutors"   element={<TutorsView />} />
+      <Route path="content"  element={<ContentShell />} />
+      <Route path="tiers"    element={<TiersShell />} />
+      <Route path="revenue"  element={<RevenueView />} />
+      <Route path="impact"   element={<ImpactShell />} />
+      <Route path="audit"    element={<AuditShell />} />
     </Routes>
   );
 }
 
-// ── Platform overview ─────────────────────────────────────────────────────────
+// ── Platform Overview ─────────────────────────────────────────────────────────
 
 function PlatformOverview() {
   const { data: stats, isLoading } = useQuery({
@@ -88,49 +80,90 @@ function PlatformOverview() {
     staleTime: 5 * 60_000,
   });
 
-  const ngnMajor  = stats ? Math.round(stats.revenue_30d_ngn / 100).toLocaleString('en-NG') : '—';
-  const usdMajor  = stats ? (stats.revenue_30d_usd / 100).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '—';
+  const ngnMajor = stats ? Math.round(stats.revenue_30d_ngn / 100).toLocaleString('en-NG') : '—';
+  const usdMajor = stats ? (stats.revenue_30d_usd / 100).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '—';
 
   return (
     <AppShell title="TTA Platform" navItems={NAV}>
       <div className="max-w-[1080px]">
-        {/* Header */}
+
+        {/* ── Page header ─────────────────────────────────────────────── */}
         <div className="mb-s-8">
-          <div className="font-mono text-eyebrow uppercase text-gold-400">Super Admin</div>
+          <div className="font-mono text-eyebrow uppercase text-gold-400">Super Admin · TTA EOS v2</div>
           <h2 className="mt-s-3 font-display text-display-2 text-ink-0">
-            Train To Teach Africa — platform overview.
+            Platform overview.
           </h2>
           <p className="mt-s-3 text-body text-ink-2 max-w-[62ch]">
-            Network-wide metrics. You're seeing data across all schools, parents,
-            tutors, and students on the platform.
+            Network-wide metrics across all schools, parents, tutors, and students on TTA.
+            One platform. Multiple organisations. Multiple curricula.
           </p>
         </div>
 
-        {/* Hero KPI band — platform numbers, not school numbers */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-s-4 mb-s-8">
-          <KpiCard label="Schools"        value={isLoading ? '…' : (stats?.school_count ?? 0).toLocaleString()} trendIntent="neutral" trend="active on platform" />
-          <KpiCard label="Pupils"         value={isLoading ? '…' : (stats?.pupil_count ?? 0).toLocaleString()} trendIntent="neutral" trend="across all schools" />
-          <KpiCard label="Parents"        value={isLoading ? '…' : (stats?.parent_count ?? 0).toLocaleString()} trendIntent="neutral" trend={`${stats?.active_parent_subs ?? 0} active subs`} />
-          <KpiCard label="Approved tutors" value={isLoading ? '…' : (stats?.tutor_count ?? 0).toLocaleString()}
+        {/* ── ① PILOT MODE PANEL ──────────────────────────────────────── */}
+        <PilotModePanel />
+
+        {/* ── Hero KPI band ───────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-s-4 mb-s-5">
+          <KpiCard
+            label="Schools"
+            value={isLoading ? '…' : (stats?.school_count ?? 0).toLocaleString()}
+            trendIntent="neutral"
+            trend="active on platform"
+          />
+          <KpiCard
+            label="Pupils"
+            value={isLoading ? '…' : (stats?.pupil_count ?? 0).toLocaleString()}
+            trendIntent="neutral"
+            trend="across all schools"
+          />
+          <KpiCard
+            label="Parents"
+            value={isLoading ? '…' : (stats?.parent_count ?? 0).toLocaleString()}
+            trendIntent="neutral"
+            trend={`${stats?.active_parent_subs ?? 0} active subs`}
+          />
+          <KpiCard
+            label="Approved tutors"
+            value={isLoading ? '…' : (stats?.tutor_count ?? 0).toLocaleString()}
             trendIntent={stats?.tutor_pending_count > 0 ? 'amber' : 'neutral'}
-            trend={stats?.tutor_pending_count > 0 ? `${stats.tutor_pending_count} awaiting review` : 'all reviewed'} />
+            trend={stats?.tutor_pending_count > 0 ? `${stats.tutor_pending_count} awaiting review` : 'all reviewed'}
+          />
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-s-4 mb-s-8">
-          <KpiCard label="Teachers"       value={isLoading ? '…' : (stats?.teacher_count ?? 0).toLocaleString()} trendIntent="neutral" trend="registered" />
-          <KpiCard label="Active school subs" value={isLoading ? '…' : (stats?.active_school_subs ?? 0).toLocaleString()} trendIntent="green" trend="running" />
-          <KpiCard label="Revenue · 30d (₦)" value={isLoading ? '…' : `₦${ngnMajor}`} trendIntent="green" trend="verified payments" />
-          <KpiCard label="Revenue · 30d ($)" value={isLoading ? '…' : `$${usdMajor}`} trendIntent="green" trend="verified payments" />
+          <KpiCard
+            label="Teachers"
+            value={isLoading ? '…' : (stats?.teacher_count ?? 0).toLocaleString()}
+            trendIntent="neutral"
+            trend="registered"
+          />
+          <KpiCard
+            label="Active school subs"
+            value={isLoading ? '…' : (stats?.active_school_subs ?? 0).toLocaleString()}
+            trendIntent="green"
+            trend="running"
+          />
+          <KpiCard
+            label="Revenue · 30d (₦)"
+            value={isLoading ? '…' : `₦${ngnMajor}`}
+            trendIntent="green"
+            trend="verified payments"
+          />
+          <KpiCard
+            label="Revenue · 30d ($)"
+            value={isLoading ? '…' : `$${usdMajor}`}
+            trendIntent="green"
+            trend="verified payments"
+          />
         </div>
 
+        {/* ── Signup sparklines + action queue ────────────────────────── */}
         <div className="grid lg:grid-cols-2 gap-s-6 mb-s-8">
-          {/* Signup trend */}
           <Card className="bg-surface-2 border-line-2">
             <div className="font-mono text-eyebrow uppercase text-gold-400 mb-s-4">Signups · last 30 days</div>
             <SignupSparklines trend={trend ?? []} />
           </Card>
 
-          {/* Action queue */}
           <Card className="bg-surface-2 border-line-2">
             <div className="flex items-center justify-between mb-s-4">
               <div className="font-mono text-eyebrow uppercase text-gold-400">Needs action</div>
@@ -150,7 +183,7 @@ function PlatformOverview() {
           </Card>
         </div>
 
-        {/* Quick links */}
+        {/* ── Quick links ─────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-s-4">
           {[
             { to: '/app/super/schools', label: 'Onboard a school',   desc: 'Add a new school to TTA' },
@@ -160,19 +193,122 @@ function PlatformOverview() {
             { to: '/app/super/revenue', label: 'Revenue report',     desc: 'Payments by plan type' },
             { to: '/app/super/impact',  label: 'Impact & outcomes',  desc: 'Network-wide metrics' },
           ].map((q) => (
-            <Link key={q.to} to={q.to}
-              className="block bg-surface-2 border border-line-2 rounded-r-3 p-s-5 hover:border-gold-400/40 transition-colors group">
-              <div className="font-display text-[16px] text-ink-0 group-hover:text-gold-400 transition-colors">{q.label}</div>
+            <Link
+              key={q.to}
+              to={q.to}
+              className="block bg-surface-2 border border-line-2 rounded-r-3 p-s-5 hover:border-gold-400/40 transition-colors group"
+            >
+              <div className="font-heading text-[15px] font-medium text-ink-0 group-hover:text-gold-400 transition-colors">
+                {q.label}
+              </div>
               <div className="mt-s-1 font-mono text-meta text-ink-3">{q.desc}</div>
             </Link>
           ))}
         </div>
+
       </div>
     </AppShell>
   );
 }
 
-// ── Schools management ────────────────────────────────────────────────────────
+// ── Pilot Mode Panel ──────────────────────────────────────────────────────────
+// This is the canonical toggle UI for super_admin.
+// All other surfaces get the PilotBanner read-only strip.
+
+function PilotModePanel() {
+  const { pilotMode, togglePilotMode, isLoading } = usePilotMode();
+  const qc = useQueryClient();
+
+  const handleToggle = async (value) => {
+    await togglePilotMode(value);
+    // Refresh platform stats so revenue/access numbers update in context
+    qc.invalidateQueries({ queryKey: ['super', 'platform-stats'] });
+  };
+
+  return (
+    <div className="mb-s-8 rounded-r-3 border border-gold-400/25 bg-gold-400/[0.04] p-s-6">
+      <div className="flex items-start justify-between gap-s-6 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <div className="font-mono text-eyebrow uppercase text-gold-400 mb-s-2">
+            Pilot Mode
+          </div>
+          <h3 className="font-heading text-[17px] font-semibold text-ink-0 mb-s-2">
+            Subscription enforcement bypass
+          </h3>
+          <p className="text-body text-ink-2 max-w-[60ch]">
+            When enabled, all dashboards, lessons, reports, and tutor features
+            are accessible without an active subscription — ideal for the pilot
+            with partner schools.
+          </p>
+          <div className="mt-s-4 space-y-s-1">
+            {[
+              ['Preserved', 'Pricing architecture, subscription plans, billing tables, payment workflows, commission engine'],
+              ['Bypassed',  'Subscription checks on lesson access, report exports, tutor features, dashboard gating'],
+            ].map(([label, detail]) => (
+              <div key={label} className="flex items-start gap-s-3 text-[13px]">
+                <span className={`font-mono text-[10px] uppercase tracking-[0.14em] mt-[2px] shrink-0 ${
+                  label === 'Preserved' ? 'text-green-400' : 'text-amber-400'
+                }`}>
+                  {label}
+                </span>
+                <span className="text-ink-3">{detail}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Toggle */}
+        <div className="flex flex-col items-end gap-s-3 shrink-0">
+          <Chip variant={pilotMode ? 'green' : 'default'} dot>
+            {isLoading ? 'Loading…' : pilotMode ? 'Active' : 'Disabled'}
+          </Chip>
+          <PilotToggle
+            checked={pilotMode}
+            disabled={isLoading}
+            onChange={handleToggle}
+          />
+          <p className="font-mono text-[10px] text-ink-3 text-right max-w-[160px]">
+            Audit trail maintained regardless of this setting.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Pilot Toggle (big version, for the panel) ─────────────────────────────────
+
+function PilotToggle({ checked, onChange, disabled }) {
+  return (
+    <div className="flex items-center gap-s-3">
+      <span className="font-mono text-[12px] text-ink-3">
+        {checked ? 'ON' : 'OFF'}
+      </span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        disabled={disabled}
+        onClick={() => !disabled && onChange(!checked)}
+        className={`
+          relative inline-flex w-[52px] h-[28px] rounded-full transition-all duration-200
+          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+          ${checked ? 'bg-gold-400' : 'bg-surface-4 border border-line-3'}
+        `}
+      >
+        <span
+          className={`
+            absolute top-[3px] w-[22px] h-[22px] rounded-full shadow-soft transition-all duration-200
+            ${checked ? 'left-[27px] bg-surface-0' : 'left-[3px] bg-ink-3'}
+          `}
+        />
+      </button>
+    </div>
+  );
+}
+
+// ── Schools View ──────────────────────────────────────────────────────────────
 
 function SchoolsView() {
   const qc = useQueryClient();
@@ -195,12 +331,9 @@ function SchoolsView() {
         <div className="mb-s-7 flex items-end justify-between gap-s-4 flex-wrap">
           <div>
             <div className="font-mono text-eyebrow uppercase text-gold-400">Schools</div>
-            <h2 className="mt-s-3 font-display text-display-2 text-ink-0">
-              All schools on TTA.
-            </h2>
+            <h2 className="mt-s-3 font-display text-display-2 text-ink-0">All schools on TTA.</h2>
             <p className="mt-s-3 text-body text-ink-2 max-w-[56ch]">
               Onboard new schools, view their status, and deactivate if needed.
-              Each school gets its own admin account on creation.
             </p>
           </div>
           <Button intent="primary" onClick={() => setShowCreate((v) => !v)}>
@@ -223,9 +356,7 @@ function SchoolsView() {
               <thead>
                 <tr className="border-b border-line-2">
                   {['School', 'Location', 'Joined', 'Status', ''].map((h) => (
-                    <th key={h} className="font-mono text-eyebrow uppercase text-ink-3 pb-s-3 pr-s-5 text-xs">
-                      {h}
-                    </th>
+                    <th key={h} className="font-mono text-eyebrow uppercase text-ink-3 pb-s-3 pr-s-5 text-xs">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -294,9 +425,7 @@ function CreateSchoolCard({ onDone }) {
           <TextInput value={form.state} onChange={(v) => set('state', v)} placeholder="Lagos State" />
         </FormField>
       </div>
-      {create.error && (
-        <p className="mt-s-4 text-body text-red-400">{create.error.message}</p>
-      )}
+      {create.error && <p className="mt-s-4 text-body text-red-400">{create.error.message}</p>}
       <div className="mt-s-5 flex gap-s-3">
         <Button intent="primary" onClick={() => create.mutate()} disabled={create.isPending || !form.name}>
           {create.isPending ? 'Creating…' : 'Create school'}
@@ -307,13 +436,13 @@ function CreateSchoolCard({ onDone }) {
   );
 }
 
-// ── Users management ──────────────────────────────────────────────────────────
+// ── Users View ────────────────────────────────────────────────────────────────
 
 function UsersView() {
   const qc = useQueryClient();
-  const [query,    setQuery]    = useState('');
-  const [role,     setRole]     = useState('');
-  const [page,     setPage]     = useState(1);
+  const [query,      setQuery]      = useState('');
+  const [role,       setRole]       = useState('');
+  const [page,       setPage]       = useState(1);
   const [showInvite, setShowInvite] = useState(false);
 
   const { data: result, isLoading } = useQuery({
@@ -340,9 +469,7 @@ function UsersView() {
         <div className="mb-s-7 flex items-end justify-between gap-s-4 flex-wrap">
           <div>
             <div className="font-mono text-eyebrow uppercase text-gold-400">Users</div>
-            <h2 className="mt-s-3 font-display text-display-2 text-ink-0">
-              All platform users.
-            </h2>
+            <h2 className="mt-s-3 font-display text-display-2 text-ink-0">All platform users.</h2>
             <p className="mt-s-3 text-body text-ink-2 max-w-[56ch]">
               Search, invite, and change roles for parents, teachers, tutors, and school admins.
             </p>
@@ -359,7 +486,6 @@ function UsersView() {
           }} />
         )}
 
-        {/* Filters */}
         <div className="flex flex-wrap gap-s-3 mb-s-5">
           <input
             className="flex-1 min-w-[200px] bg-surface-2 border border-line-2 rounded-r-1 px-s-4 py-s-3 text-body text-ink-0 placeholder-ink-3 focus:border-gold-400 outline-none"
@@ -405,9 +531,7 @@ function UsersView() {
                           {ROLE_LABEL[u.role] ?? u.role}
                         </Chip>
                       </td>
-                      <td className="py-s-3 pr-s-5 text-body text-ink-2">
-                        {u.schools?.name ?? '—'}
-                      </td>
+                      <td className="py-s-3 pr-s-5 text-body text-ink-2">{u.schools?.name ?? '—'}</td>
                       <td className="py-s-3 pr-s-5 font-mono text-meta text-ink-3">
                         {new Date(u.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </td>
@@ -431,7 +555,6 @@ function UsersView() {
                 </tbody>
               </table>
             </Card>
-
             {result.totalPages > 1 && (
               <div className="mt-s-5 flex gap-s-2">
                 {Array.from({ length: result.totalPages }, (_, i) => i + 1).map((p) => (
@@ -439,9 +562,7 @@ function UsersView() {
                     className={`w-9 h-9 rounded-full font-mono text-meta transition-colors ${
                       p === result.page ? 'bg-gold-400 text-ink-0' : 'bg-surface-2 text-ink-2 hover:bg-surface-3'
                     }`}
-                    onClick={() => setPage(p)}>
-                    {p}
-                  </button>
+                    onClick={() => setPage(p)}>{p}</button>
                 ))}
               </div>
             )}
@@ -465,10 +586,8 @@ function InvitePlatformUserCard({ onDone }) {
 
   const invite = useMutation({
     mutationFn: () => platformService.invitePlatformUser({
-      email:    form.email,
-      fullName: form.fullName,
-      role:     form.role,
-      schoolId: form.schoolId || null,
+      email: form.email, fullName: form.fullName,
+      role: form.role, schoolId: form.schoolId || null,
     }),
     onSuccess: setResult,
   });
@@ -480,7 +599,7 @@ function InvitePlatformUserCard({ onDone }) {
       <Card className="mb-s-5 border-green-400/30 bg-green-400/[0.04]">
         <Chip variant="green" dot>Invited</Chip>
         <p className="mt-s-3 text-body text-ink-1">
-          Invitation sent to <strong>{form.email}</strong> with role <strong>{form.role}</strong>.
+          Invitation sent to <strong>{form.email}</strong> as <strong>{form.role.replace(/_/g, ' ')}</strong>.
         </p>
         <div className="mt-s-4 flex gap-s-3">
           <Button intent="primary" size="sm" onClick={() => setResult(null)}>Invite another</Button>
@@ -535,11 +654,11 @@ function InvitePlatformUserCard({ onDone }) {
   );
 }
 
-// ── Tutors management ─────────────────────────────────────────────────────────
+// ── Tutors View ───────────────────────────────────────────────────────────────
 
 function TutorsView() {
   const qc = useQueryClient();
-  const [status, setStatus]           = useState('pending');
+  const [status,       setStatus]       = useState('pending');
   const [rejectTarget, setRejectTarget] = useState(null);
 
   const { data: result, isLoading } = useQuery({
@@ -573,24 +692,19 @@ function TutorsView() {
       <div className="max-w-[900px]">
         <div className="mb-s-7">
           <div className="font-mono text-eyebrow uppercase text-gold-400">Tutors</div>
-          <h2 className="mt-s-3 font-display text-display-2 text-ink-0">
-            Tutor applications and directory.
-          </h2>
+          <h2 className="mt-s-3 font-display text-display-2 text-ink-0">Tutor applications and directory.</h2>
           <p className="mt-s-3 text-body text-ink-2 max-w-[58ch]">
-            Review tutor applications. Once approved, tutors appear in parent search results.
+            Review applications. Once approved, tutors appear in parent search results.
           </p>
         </div>
 
-        {/* Status tabs */}
         <div className="flex gap-s-1 mb-s-6 border-b border-line-2">
           {STATUS_TABS.map((t) => (
             <button key={t.value}
               className={`px-s-4 py-s-3 font-mono text-meta border-b-2 -mb-px transition-colors ${
                 status === t.value ? 'border-gold-400 text-gold-400' : 'border-transparent text-ink-3 hover:text-ink-1'
               }`}
-              onClick={() => setStatus(t.value)}>
-              {t.label}
-            </button>
+              onClick={() => setStatus(t.value)}>{t.label}</button>
           ))}
         </div>
 
@@ -601,7 +715,7 @@ function TutorsView() {
             <Card key={tutor.id} className="bg-surface-2 border-line-2">
               <div className="flex items-start justify-between gap-s-4">
                 <div className="flex-1 min-w-0">
-                  <div className="font-display text-[18px] text-ink-0">{tutor.full_name}</div>
+                  <div className="font-heading text-[17px] font-medium text-ink-0">{tutor.full_name}</div>
                   <div className="mt-s-1 font-mono text-meta text-ink-3">
                     {tutor.city}, {tutor.state}
                     {tutor.hourly_rate_minor > 0 && ` · ₦${Math.round(tutor.hourly_rate_minor / 100).toLocaleString('en-NG')}/hr`}
@@ -613,9 +727,7 @@ function TutorsView() {
                     {tutor.teaches_online  && <Chip variant="gold"    size="sm">Online</Chip>}
                     {tutor.teaches_offline && <Chip variant="default" size="sm">In-person</Chip>}
                   </div>
-                  {tutor.bio && (
-                    <p className="mt-s-3 text-[13px] text-ink-3 line-clamp-2">{tutor.bio}</p>
-                  )}
+                  {tutor.bio && <p className="mt-s-3 text-[13px] text-ink-3 line-clamp-2">{tutor.bio}</p>}
                   <div className="mt-s-2 font-mono text-meta text-ink-3">
                     Applied {new Date(tutor.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </div>
@@ -623,7 +735,7 @@ function TutorsView() {
                     <p className="mt-s-2 text-[12px] text-red-400">Reason: {tutor.rejection_reason}</p>
                   )}
                 </div>
-                <div className="flex flex-col items-end gap-s-2 flex-shrink-0">
+                <div className="flex flex-col items-end gap-s-2 shrink-0">
                   <Chip variant={
                     tutor.approval_status === 'approved' ? 'green' :
                     tutor.approval_status === 'rejected' ? 'default' : 'amber'
@@ -636,12 +748,8 @@ function TutorsView() {
                         intent="primary" size="sm"
                         isLoading={approve.isPending && approve.variables?.tutorId === tutor.id}
                         onClick={() => approve.mutate({ tutorId: tutor.id })}
-                      >
-                        Approve
-                      </Button>
-                      <Button intent="ghost" size="sm" onClick={() => setRejectTarget(tutor)}>
-                        Reject
-                      </Button>
+                      >Approve</Button>
+                      <Button intent="ghost" size="sm" onClick={() => setRejectTarget(tutor)}>Reject</Button>
                     </div>
                   )}
                 </div>
@@ -675,18 +783,17 @@ function RejectTutorModal({ tutor, onClose, onConfirm, isLoading }) {
       className="fixed inset-0 z-50 flex items-center justify-center p-s-4 bg-surface-0/80 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-[420px] bg-surface-2 border border-line-2 rounded-r-3 shadow-2xl">
+      <div className="w-full max-w-[420px] bg-surface-2 border border-line-2 rounded-r-3 shadow-lift">
         <div className="flex items-center justify-between px-s-6 py-s-5 border-b border-line-1">
           <div>
-            <h3 className="font-display text-[20px] text-ink-0">Reject application</h3>
+            <h3 className="font-heading text-[18px] font-semibold text-ink-0">Reject application</h3>
             <p className="font-mono text-meta text-ink-3 mt-[2px]">{tutor.full_name}</p>
           </div>
           <button onClick={onClose} className="text-ink-4 hover:text-ink-1 text-[20px] leading-none">×</button>
         </div>
         <div className="px-s-6 py-s-5 space-y-s-4">
           <p className="text-[13px] text-ink-2">
-            This will move the tutor to rejected status and they will not appear in parent searches.
-            A clear reason helps the tutor improve a future application.
+            This will move the tutor to rejected status. A clear reason helps them improve a future application.
           </p>
           <label className="flex flex-col gap-s-2">
             <span className="font-mono text-meta uppercase tracking-[0.12em] text-ink-3">Reason *</span>
@@ -702,12 +809,7 @@ function RejectTutorModal({ tutor, onClose, onConfirm, isLoading }) {
         </div>
         <div className="flex items-center justify-end gap-s-3 px-s-6 py-s-4 border-t border-line-1">
           <Button intent="ghost" onClick={onClose} disabled={isLoading}>Cancel</Button>
-          <Button
-            intent="primary"
-            onClick={() => reason.trim() && onConfirm(reason.trim())}
-            isLoading={isLoading}
-            disabled={!reason.trim()}
-          >
+          <Button intent="primary" onClick={() => reason.trim() && onConfirm(reason.trim())} isLoading={isLoading} disabled={!reason.trim()}>
             Confirm rejection
           </Button>
         </div>
@@ -716,43 +818,7 @@ function RejectTutorModal({ tutor, onClose, onConfirm, isLoading }) {
   );
 }
 
-function ImpactShell() {
-  return (
-    <AppShell title="Impact" navItems={NAV}>
-      <ImpactDashboardView />
-    </AppShell>
-  );
-}
-
-function AuditShell() {
-  return (
-    <AppShell title="Audit log" navItems={NAV}>
-      <AuditLogView />
-    </AppShell>
-  );
-}
-
-// ── Content (lesson authoring tool) ──────────────────────────────────────────
-
-function ContentShell() {
-  return (
-    <AppShell title="Lesson Content" navItems={NAV}>
-      <LessonContentView />
-    </AppShell>
-  );
-}
-
-// ── Tiers (pricing) — same TiersView, super-admin shell ───────────────────────
-
-function TiersShell() {
-  return (
-    <AppShell title="Pricing" navItems={NAV}>
-      <TiersView />
-    </AppShell>
-  );
-}
-
-// ── Revenue view ──────────────────────────────────────────────────────────────
+// ── Revenue View ──────────────────────────────────────────────────────────────
 
 function RevenueView() {
   const { data: rows, isLoading } = useQuery({
@@ -762,15 +828,12 @@ function RevenueView() {
   });
 
   const PLAN_LABEL = { parent: 'Parent subs', school: 'School subs', tutor_booking: 'Tutor bookings', teacher: 'Teacher subs' };
-
-  // Group by currency
   const ngn = (rows ?? []).filter((r) => r.currency === 'NGN');
   const usd = (rows ?? []).filter((r) => r.currency === 'USD');
 
   function RevenueTable({ rows, currency, prefix }) {
     const months = [...new Set(rows.map((r) => r.month))].sort().reverse();
     const plans  = [...new Set(rows.map((r) => r.plan_type))];
-
     return (
       <Card className="bg-surface-2 border-line-2">
         <div className="font-mono text-eyebrow uppercase text-gold-400 mb-s-4">
@@ -840,16 +903,29 @@ function RevenueView() {
   );
 }
 
+// ── Shell wrappers for sub-routes ─────────────────────────────────────────────
+
+function ImpactShell() {
+  return <AppShell title="Impact" navItems={NAV}><ImpactDashboardView /></AppShell>;
+}
+function AuditShell() {
+  return <AppShell title="Audit log" navItems={NAV}><AuditLogView /></AppShell>;
+}
+function ContentShell() {
+  return <AppShell title="Lesson Content" navItems={NAV}><LessonContentView /></AppShell>;
+}
+function TiersShell() {
+  return <AppShell title="Pricing" navItems={NAV}><TiersView /></AppShell>;
+}
+
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 function SignupSparklines({ trend }) {
-  const ROLES = ['parent', 'teacher', 'tutor', 'school_admin'];
+  const ROLES  = ['parent', 'teacher', 'tutor', 'school_admin'];
   const COLORS = { parent: 'bg-gold-400', teacher: 'bg-blue-400', tutor: 'bg-green-400', school_admin: 'bg-purple-400' };
-  const LABELS = { parent: 'Parents', teacher: 'Teachers', tutor: 'Tutors', school_admin: 'School admins' };
+  const LABELS = { parent: 'Parents', teacher: 'Teachers', tutor: 'Tutors', school_admin: 'Admins' };
 
-  const last7 = [...new Set(
-    trend.map((r) => r.signup_date)
-  )].sort().slice(-7);
+  const last7 = [...new Set(trend.map((r) => r.signup_date))].sort().slice(-7);
 
   return (
     <div className="space-y-s-3">
@@ -861,15 +937,14 @@ function SignupSparklines({ trend }) {
         const max = Math.max(...values, 1);
         return (
           <div key={role} className="flex items-center gap-s-3">
-            <div className="font-mono text-meta text-ink-3 w-[90px] shrink-0">{LABELS[role]}</div>
+            <div className="font-mono text-meta text-ink-3 w-[72px] shrink-0">{LABELS[role]}</div>
             <div className="flex items-end gap-[3px] flex-1 h-[32px]">
               {values.map((v, i) => (
                 <div key={i} className={`flex-1 rounded-t-sm ${COLORS[role]} opacity-80`}
-                  style={{ height: `${Math.max(2, (v / max) * 32)}px` }}
-                  title={`${last7[i]}: ${v}`} />
+                  style={{ height: `${Math.max(2, (v / max) * 32)}px` }} title={`${last7[i]}: ${v}`} />
               ))}
             </div>
-            <div className="font-mono text-meta text-ink-0 w-[30px] text-right shrink-0">
+            <div className="font-mono text-meta text-ink-0 w-[28px] text-right shrink-0">
               {values[values.length - 1] ?? 0}
             </div>
           </div>

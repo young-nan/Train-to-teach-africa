@@ -4,8 +4,18 @@
  * App entry. Boots:
  *   1. React Query (server cache)
  *   2. Auth lifecycle (session + profile hydration)
- *   3. Offline sync engine
- *   4. Router
+ *   3. Pilot Mode hydration  ← NEW in v2
+ *   4. Offline sync engine
+ *   5. Router
+ *
+ * v2 CHANGE: PilotProvider added between AuthProvider and Routes.
+ * PilotProvider reads the pilot_mode setting from Supabase once auth
+ * resolves, then stores it in Zustand. All components that need to check
+ * pilot mode use usePilotMode() — they never query Supabase directly.
+ *
+ * The provider is placed AFTER auth resolves so it can check the session
+ * before making the DB call. It has zero performance impact when pilot mode
+ * is off — it reads one row from platform_settings and returns.
  */
 
 import React from 'react';
@@ -13,6 +23,7 @@ import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Routes } from '@/routes';
 import { useAuthBootstrap } from '@/hooks/useAuth';
+import { PilotProvider } from '@/components/providers/PilotProvider';
 import { startSyncEngine } from '@/lib/offline/sync';
 import './styles.css';
 
@@ -40,7 +51,15 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Routes />
+        {/*
+          PilotProvider sits here — inside AuthProvider so it can read
+          auth.status, outside Routes so it runs before any route renders.
+          This means every page in the app always has pilotMode in the store
+          before it mounts.
+        */}
+        <PilotProvider>
+          <Routes />
+        </PilotProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
